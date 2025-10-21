@@ -829,7 +829,7 @@ def render_main_app():
         page_key_prefix="main_app",
         show_titles=True,
         title_account_industry="Account & Industry",
-        title_problem="Business Problem Description",
+        title_problem="Share your Problem Statement",
         save_button_label="Save Problem Details"
     )
 
@@ -1344,3 +1344,4 @@ elif st.session_state.page == "main_app":
     render_main_app()
 else:
     render_login_page()
+
