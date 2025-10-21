@@ -1038,13 +1038,11 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         .stSelectbox { margin-bottom: 1rem; }
         .stSelectbox > label { font-weight:700!important; font-size:1rem!important; margin-bottom:0.5rem!important; color: inherit !important; }
         .stSelectbox > div > div { border:2px solid rgba(139,30,30,0.4)!important; border-radius:10px!important; padding:0.5rem 0.75rem!important; min-height:42px!important; max-height:42px!important; display:flex!important; align-items:center!important; }
+        .stSelectbox [data-baseweb="select"] { min-height:36px!important; max-height:36px!important; }
+        .stSelectbox [data-baseweb="select"] > div { font-size:0.95rem!important; font-weight:600!important; line-height:1.3!important; white-space:nowrap!important; overflow:hidden!important; text-overflow:ellipsis!important; padding:0!important; display:flex!important; align-items:center!important; }
         .stTextArea textarea { border:2px solid rgba(139,30,30,0.3)!important; border-radius:10px!important; font-size:1.05rem!important; padding:1.25rem!important; line-height:1.7!important; min-height:180px!important; font-weight:500!important; }
         .section-title-box { background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 100%)!important; border-radius:10px; padding:1rem 2rem; margin:0 0 1rem 0!important; text-align:center; box-shadow: 0 4px 12px rgba(139,30,30,0.3); }
         .section-title-box h3 { color:#ffffff!important; margin:0!important; font-weight:700!important; font-size:1.3rem!important; text-shadow: none !important; }
-        
-        /* Button container styling */
-        .button-container { display: flex; gap: 1rem; margin-top: 1.5rem; }
-        .button-container .stButton { flex: 1; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1065,7 +1063,7 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
             key=f"{page_key_prefix}_account_select_{st.session_state.selectbox_key_counter}"
         )
 
-        # Handle account change
+        # Handle account change and auto-map industry
         if account_input != st.session_state.business_account:
             if st.session_state.cancel_clicked:
                 st.session_state.cancel_clicked = False
@@ -1074,7 +1072,6 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                 account_change_value = account_input
             else:
                 st.session_state.business_account = account_input
-                # Auto-map industry
                 if account_input in ACCOUNT_INDUSTRY_MAP:
                     mapped_industry = ACCOUNT_INDUSTRY_MAP[account_input]
                     st.session_state.business_industry = mapped_industry
@@ -1124,7 +1121,6 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                     mapped_industry = ACCOUNT_INDUSTRY_MAP[account_change_value]
                     st.session_state.business_industry = mapped_industry
                 st.session_state.selectbox_key_counter += 1
-                st.session_state[f'{page_key_prefix}_show_save_btn'] = True
                 _safe_rerun()
         with colD:
             if st.button("No", key=f"{page_key_prefix}_cancel_edit", type="secondary"):
@@ -1149,43 +1145,26 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if problem_input != st.session_state.business_problem:
         st.session_state.business_problem = problem_input
 
-    # 🔥 SIMPLE BUTTON LOGIC: ALWAYS SHOW BOTH BUTTONS LIKE WELCOME PAGE
-    col1, col2 = st.columns([1, 1])
-    
-    # Save button - always show when there are unsaved changes
-    with col1:
-        has_unsaved_changes = (
-            st.session_state.business_account != st.session_state.saved_account or
-            st.session_state.business_industry != st.session_state.saved_industry or
-            st.session_state.business_problem != st.session_state.saved_problem
-        )
-        
-        if has_unsaved_changes:
-            if st.button(save_button_label, use_container_width=True, type="primary", key=f"{page_key_prefix}_save_btn"):
-                if (st.session_state.business_account == "Select Account" or
-                    st.session_state.business_industry == "Select Industry" or
-                    not st.session_state.business_problem.strip()):
-                    st.error("⚠️ Please select an Account, Industry, and provide a Business Problem description.")
-                else:
-                    st.session_state.saved_account = st.session_state.business_account
-                    st.session_state.saved_industry = st.session_state.business_industry
-                    st.session_state.saved_problem = st.session_state.business_problem
-                    st.session_state.edit_confirmed = False
-                    st.success("✅ Problem details saved!")
-                    _safe_rerun()
-        else:
-            # Show disabled save button when no changes
-            st.button(save_button_label, use_container_width=True, disabled=True, key=f"{page_key_prefix}_save_btn_disabled")
-    
-    # Extract button - ALWAYS SHOW (never disappears after extraction)
-    with col2:
-        if st.button("📋 Extract & Copy", use_container_width=True, key=f"{page_key_prefix}_extract_btn"):
-            problem_text = st.session_state.business_problem
-            if problem_text and problem_text.strip():
-                st.session_state.extracted_text = problem_text
-                st.success("✅ Problem statement copied to clipboard!")
+    # 🔥 SIMPLE FIX: Always show Save button when there are unsaved changes
+    has_unsaved_changes = (
+        st.session_state.business_account != st.session_state.saved_account or
+        st.session_state.business_industry != st.session_state.saved_industry or
+        st.session_state.business_problem != st.session_state.saved_problem
+    )
+
+    if has_unsaved_changes:
+        if st.button(save_button_label, use_container_width=True, type="primary", key=f"{page_key_prefix}_save_btn"):
+            if (st.session_state.business_account == "Select Account" or
+                st.session_state.business_industry == "Select Industry" or
+                not st.session_state.business_problem.strip()):
+                st.error("⚠️ Please select an Account, Industry, and provide a Business Problem description.")
             else:
-                st.warning("⚠️ No problem statement to extract")
+                st.session_state.saved_account = st.session_state.business_account
+                st.session_state.saved_industry = st.session_state.business_industry
+                st.session_state.saved_problem = st.session_state.business_problem
+                st.session_state.edit_confirmed = False
+                st.success("✅ Problem details saved!")
+                _safe_rerun()
 
     return (
         st.session_state.business_account,
@@ -1374,6 +1353,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
