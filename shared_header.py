@@ -1032,6 +1032,10 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if 'selectbox_key_counter' not in st.session_state:
         st.session_state.selectbox_key_counter = 0
 
+    # 🔥 ADD: Track auto-mapping state
+    if 'auto_mapped_industry' not in st.session_state:
+        st.session_state.auto_mapped_industry = False
+
     # Enhanced input styles with better visibility
     st.markdown("""
     <style>
@@ -1043,6 +1047,18 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         .stTextArea textarea { border:2px solid rgba(139,30,30,0.3)!important; border-radius:10px!important; font-size:1.05rem!important; padding:1.25rem!important; line-height:1.7!important; min-height:180px!important; font-weight:500!important; }
         .section-title-box { background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 100%)!important; border-radius:10px; padding:1rem 2rem; margin:0 0 1rem 0!important; text-align:center; box-shadow: 0 4px 12px rgba(139,30,30,0.3); }
         .section-title-box h3 { color:#ffffff!important; margin:0!important; font-weight:700!important; font-size:1.3rem!important; text-shadow: none !important; }
+        
+        /* Auto-mapped indicator */
+        .auto-mapped-indicator {
+            background: rgba(139, 30, 30, 0.1);
+            border: 1px solid rgba(139, 30, 30, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            font-size: 0.85rem;
+            color: #8b1e1e;
+            text-align: center;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1056,14 +1072,18 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     account_change_value = None
 
     with c1:
+        # Get current account index
+        current_account = st.session_state.business_account
+        account_index = ACCOUNTS.index(current_account) if current_account in ACCOUNTS else 0
+        
         account_input = st.selectbox(
             "Select Account:",
             options=ACCOUNTS,
-            index=ACCOUNTS.index(st.session_state.business_account) if st.session_state.business_account in ACCOUNTS else 0,
+            index=account_index,
             key=f"{page_key_prefix}_account_select_{st.session_state.selectbox_key_counter}"
         )
 
-        # Handle account change and auto-map industry
+        # 🔥 FIXED: Handle account change with IMMEDIATE auto-mapping
         if account_input != st.session_state.business_account:
             if st.session_state.cancel_clicked:
                 st.session_state.cancel_clicked = False
@@ -1071,19 +1091,39 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                 show_confirmation = True
                 account_change_value = account_input
             else:
+                # Immediate update with auto-mapping
                 st.session_state.business_account = account_input
-                if account_input in ACCOUNT_INDUSTRY_MAP:
+                
+                # 🔥 IMMEDIATE AUTO-MAPPING - This is the key fix
+                if account_input in ACCOUNT_INDUSTRY_MAP and account_input != "Select Account":
                     mapped_industry = ACCOUNT_INDUSTRY_MAP[account_input]
                     st.session_state.business_industry = mapped_industry
+                    st.session_state.auto_mapped_industry = True
+                    print(f"DEBUG: Auto-mapped {account_input} -> {mapped_industry}")
+                    
+                    # Force immediate UI update
                     st.rerun()
+                else:
+                    st.session_state.business_industry = "Select Industry"
+                    st.session_state.auto_mapped_industry = False
 
     with c2:
+        # 🔥 FIXED: Always get the LATEST values from session state
         current_industry = st.session_state.business_industry
         current_account = st.session_state.business_account
         
-        is_auto_mapped = current_account in ACCOUNT_INDUSTRY_MAP and current_account != "Select Account"
+        # Check if industry should be auto-mapped (disabled)
+        is_auto_mapped = (
+            current_account in ACCOUNT_INDUSTRY_MAP and 
+            current_account != "Select Account" and
+            st.session_state.auto_mapped_industry
+        )
         
+        # 🔥 FIXED: Ensure the index is calculated correctly with current values
         industry_index = INDUSTRIES.index(current_industry) if current_industry in INDUSTRIES else 0
+        
+        # 🔥 FIXED: Dynamic key to force refresh when auto-mapped
+        industry_key = f"{page_key_prefix}_industry_select_{st.session_state.selectbox_key_counter}_{current_industry}_{is_auto_mapped}"
         
         industry_input = st.selectbox(
             "Industry:", 
@@ -1091,11 +1131,17 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
             index=industry_index,
             disabled=is_auto_mapped,
             help="Industry is automatically mapped for this account" if is_auto_mapped else "Select the industry for this analysis",
-            key=f"{page_key_prefix}_industry_select_{st.session_state.selectbox_key_counter}"
+            key=industry_key
         )
         
+        # Show auto-mapped indicator
+        if is_auto_mapped:
+            st.markdown(f'<div class="auto-mapped-indicator">🔒 Auto-mapped to: <strong>{current_industry}</strong></div>', unsafe_allow_html=True)
+        
+        # Only allow manual industry change if not auto-mapped
         if not is_auto_mapped and industry_input != st.session_state.business_industry:
             st.session_state.business_industry = industry_input
+            st.session_state.auto_mapped_industry = False  # Manual selection
 
     # Confirmation dialog for account change
     if show_confirmation:
@@ -1117,9 +1163,11 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
             if st.button("Yes", key=f"{page_key_prefix}_confirm_edit", type="primary"):
                 st.session_state.edit_confirmed = True
                 st.session_state.business_account = account_change_value
+                # 🔥 AUTO-MAP INDUSTRY IN CONFIRMATION FLOW
                 if account_change_value in ACCOUNT_INDUSTRY_MAP:
                     mapped_industry = ACCOUNT_INDUSTRY_MAP[account_change_value]
                     st.session_state.business_industry = mapped_industry
+                    st.session_state.auto_mapped_industry = True
                 st.session_state.selectbox_key_counter += 1
                 _safe_rerun()
         with colD:
@@ -1127,6 +1175,7 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                 st.session_state.cancel_clicked = True
                 st.session_state.business_account = st.session_state.saved_account
                 st.session_state.business_industry = st.session_state.saved_industry
+                st.session_state.auto_mapped_industry = False
                 st.session_state.selectbox_key_counter += 1
                 _safe_rerun()
 
@@ -1163,6 +1212,7 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                 st.session_state.saved_industry = st.session_state.business_industry
                 st.session_state.saved_problem = st.session_state.business_problem
                 st.session_state.edit_confirmed = False
+                st.session_state.auto_mapped_industry = False  # Reset after save
                 st.success("✅ Problem details saved!")
                 _safe_rerun()
 
@@ -1353,6 +1403,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
