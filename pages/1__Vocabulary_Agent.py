@@ -607,11 +607,10 @@ st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 
 st.markdown(
     "Please share your thoughts or suggestions after reviewing the vocabulary results.")
 
-# Enhanced section parsing function
+# IMPROVED section parsing function - FIXED TO DETECT ALL SECTIONS
 def parse_vocabulary_sections(vocab_text):
     sections = {}
     current_section = None
-    current_items = []
     
     if not vocab_text:
         return sections
@@ -621,30 +620,33 @@ def parse_vocabulary_sections(vocab_text):
     for line in lines:
         line = line.strip()
         
-        # Detect section headers (Section X: Title)
-        section_match = re.match(r'^Section\s+(\d+):\s*(.+)$', line)
+        # Detect section headers (Section X: Title) - IMPROVED REGEX
+        section_match = re.match(r'^Section\s+(\d+):\s*(.+?)(?=\n|$)', line, re.IGNORECASE)
         if section_match:
-            # Save previous section if exists
-            if current_section and current_items:
-                sections[current_section] = current_items.copy()
+            # Save previous section
+            if current_section:
+                sections[current_section] = sections.get(current_section, [])
             
             # Start new section
             section_num = section_match.group(1)
             section_title = section_match.group(2).strip()
             current_section = f"Section {section_num}: {section_title}"
-            current_items = []
+            sections[current_section] = []
             continue
         
-        # Detect numbered items within sections (1. Term: Definition)
-        if current_section:
-            item_match = re.match(r'^(\d+)\.\s+(.+?):\s*(.+)$', line)
+        # Detect numbered items within sections (1. Term: Definition) - IMPROVED REGEX
+        if current_section and line:
+            # More flexible pattern to catch different formats
+            item_match = re.match(r'^(\d+)\.\s+(.+?)(?::\s*.+)?$', line)
             if item_match:
                 item_term = item_match.group(2).strip()
-                current_items.append(item_term)
+                # Clean up the term - remove any trailing colons or extra spaces
+                item_term = re.sub(r':\s*$', '', item_term)
+                sections[current_section].append(item_term)
     
     # Don't forget to add the last section
-    if current_section and current_items:
-        sections[current_section] = current_items.copy()
+    if current_section:
+        sections[current_section] = sections.get(current_section, [])
     
     return sections
 
@@ -652,28 +654,27 @@ def parse_vocabulary_sections(vocab_text):
 vocab_text = st.session_state.get("vocab_output", "")
 sections_data = parse_vocabulary_sections(vocab_text)
 
-# Debug: Check what user data is available
-if st.session_state.get('show_vocabulary'):
-    with st.expander("Debug: User Session Data"):
-        st.write("All session state keys:", list(st.session_state.keys()))
-        st.write("Employee ID:", st.session_state.get('employee_id', 'NOT FOUND'))
-        st.write("User ID:", st.session_state.get('user_id', 'NOT FOUND'))
-        st.write("User info keys:", [key for key in st.session_state.keys() if 'user' in key.lower() or 'id' in key.lower() or 'employee' in key.lower()])
+# DEBUG: Check what was parsed (hidden from users)
+if st.session_state.get('show_vocabulary') and st.session_state.get('analysis_complete'):
+    # This is hidden but helps us see if parsing is working
+    debug_info = {
+        "raw_text_length": len(vocab_text),
+        "sections_found": list(sections_data.keys()),
+        "section_counts": {section: len(items) for section, items in sections_data.items()}
+    }
+    # Uncomment the line below to see debug info in terminal (not visible to users)
+    # print("DEBUG PARSING:", debug_info)
 
 # FIXED: Get employee ID from login page
 def get_user_id():
-    # Try employee_id first (from your login page)
     if 'employee_id' in st.session_state and st.session_state.employee_id:
         return st.session_state.employee_id
     
-    # Fallback to other possible keys
     possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
-    
     for key in possible_keys:
         if key in st.session_state and st.session_state[key]:
             return st.session_state[key]
     
-    # If no user ID found, check shared header data
     try:
         shared_data = get_shared_data()
         if shared_data and 'user_id' in shared_data:
@@ -708,21 +709,16 @@ if not st.session_state.get('feedback_submitted', False):
     if fb_choice == "I have read it, found it useful, thanks.":
         with st.form("feedback_form_positive", clear_on_submit=True):
             st.info("Thank you for your positive feedback!")
-            
-            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
             st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_display")
-            
             submitted = st.form_submit_button("📨 Submit Positive Feedback")
             if submitted:
                 if submit_feedback(fb_choice, user_id=user_id):
                     st.success("✅ Thank you! Your positive feedback has been recorded.")
 
-    # Feedback form 2: Definitions off - FIXED TO SHOW ALL SECTIONS
+    # Feedback form 2: Definitions off - FIXED DYNAMIC DROPDOWNS
     elif fb_choice == "I have read it, found some definitions to be off.":
         with st.form("feedback_form_defs", clear_on_submit=True):
             st.markdown("**Please select which sections and terms have definitions that seem off:**")
-            
-            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
             st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_defs")
 
             selected_issues = {}
@@ -735,7 +731,7 @@ if not st.session_state.get('feedback_submitted', False):
                 "Section 4: Present a Cohesive Narrative"
             ]
             
-            # Create dropdowns for ALL expected sections
+            # Create dropdowns for ALL expected sections with DYNAMIC content
             for section_name in expected_sections:
                 # Get the display name without "Section X: "
                 display_section_name = section_name.replace('Section 1: ', '')\
@@ -745,11 +741,16 @@ if not st.session_state.get('feedback_submitted', False):
                 
                 st.markdown(f"**{display_section_name}**")
                 
-                # Get items for this section (either from parsed data or fallback)
+                # Get items for this section - PRIORITIZE PARSED DATA
+                items = []
+                
+                # First try to get dynamically parsed items
                 if section_name in sections_data and sections_data[section_name]:
                     items = sections_data[section_name]
+                    # Show a small indicator that this is dynamically loaded
+                    st.caption(f"📊 Found {len(items)} terms")
                 else:
-                    # Fallback items for each section
+                    # Fallback to predefined items only if no dynamic data
                     fallback_items = {
                         "Section 1: Extract and Define Business Vocabulary Terms": [
                             "Managed Pros", "Account Support", "Growth Strategies", 
@@ -770,17 +771,18 @@ if not st.session_state.get('feedback_submitted', False):
                         ]
                     }
                     items = fallback_items.get(section_name, [])
+                    st.caption("📝 Using standard terms")
                 
-                # For ALL sections show dropdowns
+                # Show dropdown for ALL sections
                 if items:
                     selected_items = st.multiselect(
                         f"Select problematic terms in {display_section_name}:",
                         options=items,
-                        key=f"multiselect_{section_name}",
+                        key=f"multiselect_{section_name}_{hash(str(items))}",  # Unique key based on content
                         help=f"Select terms from {display_section_name} that have definition issues"
                     )
                 else:
-                    st.info("No specific terms found in this section.")
+                    st.info("No terms available for this section.")
                     selected_items = []
                 
                 if selected_items:
@@ -810,10 +812,7 @@ if not st.session_state.get('feedback_submitted', False):
     elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
         with st.form("feedback_form_suggestions", clear_on_submit=True):
             st.markdown("**Please share your suggestions for improvement:**")
-            
-            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
             st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_suggestions")
-            
             suggestions = st.text_area(
                 "Your suggestions:",
                 placeholder="What features would you like to see improved or added?"
@@ -909,6 +908,18 @@ st.markdown("""
         border-radius: 12px !important;
         font-weight: 500;
     }
+    
+    /* Caption styling */
+    .stCaption {
+        font-size: 0.8rem !important;
+        color: #666 !important;
+        margin-top: -10px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    [data-theme="dark"] .stCaption {
+        color: #aaa !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 # ===============================
@@ -962,6 +973,7 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
 
