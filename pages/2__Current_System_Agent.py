@@ -514,7 +514,12 @@ st.markdown(
 # 🚀 API CALL BUTTON
 # =========================================
 if not st.session_state.current_system_extracted:
-    if st.button("🔍 Extract Current System", type="primary", use_container_width=True):
+    if st.button(
+        "🔍 Extract Current System • ⏱️ 60-90s", 
+        type="primary", 
+        use_container_width=True,
+        help="Please be patient as this process may take 60-90 seconds to complete"
+    ):
         if not st.session_state.saved_problem.strip():
             st.error("⚠️ Please save your business problem details first!")
         else:
@@ -529,7 +534,6 @@ if not st.session_state.current_system_extracted:
                     st.session_state.current_system_extracted = True
                     st.success("✅ Current System extracted successfully!")
                     _safe_rerun()
-
 # =========================================
 # 📊 DISPLAY RESULTS
 # =========================================
@@ -999,4 +1003,5 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
 
