@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 from shared_header import (
     render_header, 
     render_unified_business_inputs,
@@ -105,7 +105,7 @@ except Exception:
 
 
 def render_login_page():
-    """Fixed login page with larger welcome box and smaller elements"""
+    """Fixed login page with proper vertical stacking"""
     
     render_header(
         agent_name="Business Problem Analysis Platform",
@@ -114,7 +114,7 @@ def render_login_page():
         header_height=100
     )
 
-    # 🔥 LARGER WELCOME BOX + SMALLER ELEMENTS
+    # 🔥 FIXED CSS - Removed fixed positioning, proper vertical flow
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
@@ -122,7 +122,6 @@ def render_login_page():
     * {
         font-family: 'Poppins', sans-serif !important;
     }
-    
     
     @keyframes gradientShift {
         0% { background-position: 0% 50%; }
@@ -158,27 +157,14 @@ def render_login_page():
         100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
     }
     
-    /* Fixed Container */
+    /* FIXED: Remove fixed positioning, use normal flow */
     .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        max-height: calc(100vh - 100px) !important;
-        overflow: hidden !important;
+        padding-top: 2rem !important;
+        max-width: 600px !important;
+        margin: 0 auto !important;
     }
     
-    /* LARGER LOGIN CONTAINER - Close to Header */
-    .login-fixed-wrapper {
-        position: fixed;
-        top: 115px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
-        width: 100%;
-        max-width: 600px; /* Increased from 500px */
-        padding: 0 1rem;
-    }
-    
-    /* LARGER Welcome Card */
+    /* Welcome Card - Normal document flow */
     .welcome-card-static {
         position: relative;
         width: 100%;
@@ -186,12 +172,12 @@ def render_login_page():
         backdrop-filter: blur(30px) saturate(180%);
         border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: 25px;
-        padding: 3.5rem 3rem; /* Increased padding */
+        padding: 3.5rem 3rem;
         box-shadow: 
             0 25px 80px rgba(0, 0, 0, 0.4),
             0 0 60px rgba(255, 107, 53, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.3);
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
     
     [data-theme="dark"] .welcome-card-static {
@@ -211,9 +197,9 @@ def render_login_page():
         filter: blur(8px);
     }
     
-    /* LARGER Static Title */
+    /* Static Title */
     .static-title {
-        font-size: 3.5rem; /* Increased from 2.8rem */
+        font-size: 3.5rem;
         font-weight: 900;
         text-align: center;
         color: #ffffff;
@@ -228,7 +214,7 @@ def render_login_page():
     .static-subtitle {
         text-align: center;
         color: rgba(255, 255, 255, 0.85);
-        font-size: 1.3rem; /* Increased from 1.1rem */
+        font-size: 1.3rem;
         font-weight: 500;
         margin: 0;
     }
@@ -237,14 +223,14 @@ def render_login_page():
         color: rgba(255, 255, 255, 0.8);
     }
     
-    /* SMALLER Input Styling */
+    /* Input Styling */
     .stTextInput label {
         color: rgba(255, 255, 255, 0.95) !important;
         font-weight: 700 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        margin-bottom: 0.4rem !important; /* Reduced margin */
+        margin-bottom: 0.4rem !important;
     }
     
     [data-theme="dark"] .stTextInput label {
@@ -258,10 +244,10 @@ def render_login_page():
         color: white !important;
         font-size: 1rem !important;
         font-weight: 600 !important;
-        padding: 0.65rem 1rem !important; /* Reduced padding */
+        padding: 0.65rem 1rem !important;
         transition: all 0.3s ease !important;
         box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-        height: 45px !important; /* Fixed height */
+        height: 45px !important;
     }
     
     [data-theme="dark"] .stTextInput input {
@@ -282,17 +268,17 @@ def render_login_page():
         color: rgba(255, 255, 255, 0.5) !important;
     }
     
-    /* SMALLER Button Styling */
+    /* Button Styling */
     .stButton > button {
         position: relative;
         background: linear-gradient(135deg, #ff6b35 0%, #8b1e1e 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 12px !important; /* Smaller radius */
-        padding: 0.8rem 2rem !important; /* Reduced padding */
+        border-radius: 12px !important;
+        padding: 0.8rem 2rem !important;
         width: 100% !important;
         font-weight: 800 !important;
-        font-size: 1rem !important; /* Slightly smaller font */
+        font-size: 1rem !important;
         text-transform: uppercase;
         letter-spacing: 2.5px;
         overflow: hidden;
@@ -300,8 +286,8 @@ def render_login_page():
             0 8px 30px rgba(255, 107, 53, 0.5),
             inset 0 1px 0 rgba(255, 255, 255, 0.3);
         transition: all 0.3s ease !important;
-        margin-top: 1rem !important; /* Reduced margin */
-        height: 50px !important; /* Fixed height */
+        margin-top: 1rem !important;
+        height: 50px !important;
     }
     
     [data-theme="dark"] .stButton > button {
@@ -354,12 +340,12 @@ def render_login_page():
         color: white !important;
         font-weight: 600 !important;
         margin-top: 1rem !important;
-        padding: 0.8rem !important; /* Smaller padding */
+        padding: 0.8rem !important;
     }
     
     /* Input container spacing */
     .stTextInput {
-        margin-bottom: 0.8rem !important; /* Reduced spacing */
+        margin-bottom: 0.8rem !important;
     }
     </style>
     
@@ -375,17 +361,17 @@ def render_login_page():
         <div class="particle" style="left: 80%; animation-delay: 4.5s;"></div>
         <div class="particle" style="left: 90%; animation-delay: 1.5s;"></div>
     </div>
+    """, unsafe_allow_html=True)
     
-    <!-- Fixed Login Wrapper with LARGER Welcome Card -->
-    <div class="login-fixed-wrapper">
-        <div class="welcome-card-static">
-            <h1 class="static-title">Welcome</h1>
-            <p class="static-subtitle"> Enter the AI-Powered Future</p>
-        </div>
+    # Welcome Card in normal flow
+    st.markdown("""
+    <div class="welcome-card-static">
+        <h1 class="static-title">Welcome</h1>
+        <p class="static-subtitle">🚀 Enter the AI-Powered Future</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Render inputs in fixed position (Streamlit will place them naturally)
+    # Inputs naturally stacked below
     employee_id = st.text_input(
         "Employee ID",
         placeholder="Your ID",
@@ -393,18 +379,18 @@ def render_login_page():
         label_visibility="visible"
     )
     
-    if st.button(" LAUNCH", use_container_width=True, key="login_btn"):
+    if st.button("🚀 LAUNCH", use_container_width=True, key="login_btn"):
         if employee_id:
             st.session_state.employee_id = employee_id
             st.session_state.page = "main_app"
             st.session_state.main_app_show_save_btn = True
             st.rerun()
         else:
-            st.error("Please enter your Employee ID")
+            st.error("⚠️ Please enter your Employee ID")
 
 
 def render_main_app():
-    """MAIN APP with SMALLER title cards and buttons"""
+    """MAIN APP with agent navigation"""
     
     if st.session_state.get('show_admin_panel') and not st.session_state.get('admin_view_selected'):
         _render_admin_confirmation()
@@ -414,7 +400,7 @@ def render_main_app():
         _render_admin_panel()
         return
 
-    # 🔥 ADVANCED CSS with SMALLER Elements
+    # CSS for main app (keeping your existing styles)
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
@@ -447,17 +433,17 @@ def render_main_app():
                 #0a0a0f;
         }
         
-        /* SMALLER Hero Banner */
+        /* Hero Banner */
         .hero-banner {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px; /* Smaller radius */
-            padding: 1.5rem 2rem; /* Reduced padding */
-            margin: 1.5rem auto 2rem auto; /* Reduced margins */
+            border-radius: 20px;
+            padding: 1.5rem 2rem;
+            margin: 1.5rem auto 2rem auto;
             max-width: 1200px;
             box-shadow: 
-                0 15px 40px rgba(139, 30, 30, 0.15), /* Smaller shadow */
+                0 15px 40px rgba(139, 30, 30, 0.15),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
             position: relative;
             overflow: hidden;
@@ -466,7 +452,7 @@ def render_main_app():
         
         @keyframes bannerFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); } /* Smaller float */
+            50% { transform: translateY(-5px); }
         }
         
         .hero-banner::before {
@@ -489,16 +475,16 @@ def render_main_app():
             background: rgba(20, 20, 30, 0.7);
             border: 1px solid rgba(255, 107, 53, 0.3);
             box-shadow: 
-                0 15px 40px rgba(0, 0, 0, 0.4), /* Smaller shadow */
+                0 15px 40px rgba(0, 0, 0, 0.4),
                 0 0 30px rgba(255, 107, 53, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .hero-banner h2 {
             text-align: center;
-            font-size: 2rem; /* Smaller font */
+            font-size: 2rem;
             font-weight: 900;
-            margin: 0 0 0.8rem 0; /* Reduced margin */
+            margin: 0 0 0.8rem 0;
             background: linear-gradient(135deg, #8b1e1e, #ff6b35, #8b1e1e);
             background-size: 200% auto;
             -webkit-background-clip: text;
@@ -516,7 +502,7 @@ def render_main_app():
         .hero-banner p {
             text-align: center;
             color: #64748b;
-            font-size: 1rem; /* Smaller font */
+            font-size: 1rem;
             font-weight: 500;
             margin: 0;
             position: relative;
@@ -527,18 +513,18 @@ def render_main_app():
             color: #cbd5e1;
         }
         
-        /* SMALLER Magnetic Section Headers */
+        /* Section Headers */
         .section-header-magnetic {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
             backdrop-filter: blur(15px);
             border: 2px solid transparent;
             background-clip: padding-box;
-            border-radius: 15px; /* Smaller radius */
-            padding: 1.5rem 2rem; /* Reduced padding */
-            margin: 2rem 0 1.5rem 0; /* Reduced margins */
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            margin: 2rem 0 1.5rem 0;
             position: relative;
             box-shadow: 
-                0 8px 25px rgba(139, 30, 30, 0.1), /* Smaller shadow */
+                0 8px 25px rgba(139, 30, 30, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
@@ -548,7 +534,7 @@ def render_main_app():
             content: '';
             position: absolute;
             inset: -2px;
-            border-radius: 15px; /* Smaller radius */
+            border-radius: 15px;
             background: linear-gradient(135deg, #ff6b35, #8b1e1e, #ff6b35);
             background-size: 200% 200%;
             animation: borderRotate 4s linear infinite;
@@ -567,27 +553,27 @@ def render_main_app():
         }
         
         .section-header-magnetic:hover {
-            transform: translateY(-5px) scale(1.02); /* Smaller lift */
+            transform: translateY(-5px) scale(1.02);
             box-shadow: 
-                0 15px 40px rgba(139, 30, 30, 0.2), /* Smaller shadow */
+                0 15px 40px rgba(139, 30, 30, 0.2),
                 0 0 30px rgba(255, 107, 53, 0.3);
         }
         
         .section-header-magnetic h3 {
             color: #1e293b;
-            font-size: 1.5rem; /* Smaller font */
+            font-size: 1.5rem;
             font-weight: 800;
             margin: 0;
             display: flex;
             align-items: center;
-            gap: 0.8rem; /* Reduced gap */
+            gap: 0.8rem;
             letter-spacing: -0.5px;
         }
         
         [data-theme="dark"] .section-header-magnetic {
             background: linear-gradient(135deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.9));
             box-shadow: 
-                0 8px 25px rgba(0, 0, 0, 0.4), /* Smaller shadow */
+                0 8px 25px rgba(0, 0, 0, 0.4),
                 0 0 20px rgba(255, 107, 53, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
@@ -596,76 +582,23 @@ def render_main_app():
             color: #f1f5f9;
         }
         
-        /* SMALLER 3D Flip Agent Cards */
-        .agent-card-container {
-            perspective: 1000px;
-            height: 150px; /* Reduced height */
-        }
-        
-        .agent-card-flip {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-style: preserve-3d;
-        }
-        
-        .agent-card-container:hover .agent-card-flip {
-            transform: rotateY(180deg);
-        }
-        
-        .agent-card-front, .agent-card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 20px; /* Smaller radius */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem; /* Smaller font */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Smaller shadow */
-        }
-        
-        .agent-card-front {
-            background: linear-gradient(135deg, #ffffff, #f8fafc);
-            border: 2px solid rgba(255, 107, 53, 0.2); /* Thinner border */
-            color: #1e293b;
-        }
-        
-        .agent-card-back {
-            background: linear-gradient(135deg, #8b1e1e, #ff6b35);
-            color: white;
-            transform: rotateY(180deg);
-            padding: 1rem; /* Reduced padding */
-            font-size: 0.9rem; /* Smaller font */
-            text-align: center;
-        }
-        
-        [data-theme="dark"] .agent-card-front {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
-            border: 2px solid rgba(255, 107, 53, 0.4); /* Thinner border */
-            color: #f1f5f9;
-        }
-        
-        /* SMALLER Enhanced Agent Buttons */
+        /* Enhanced Agent Buttons */
         .stButton > button[kind="secondary"] {
             position: relative;
             background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
             color: #1e293b !important;
-            border: 2px solid rgba(255, 107, 53, 0.3) !important; /* Thinner border */
-            border-radius: 20px !important; /* Smaller radius */
-            padding: 1.5rem 1rem !important; /* Reduced padding */
+            border: 2px solid rgba(255, 107, 53, 0.3) !important;
+            border-radius: 20px !important;
+            padding: 1.5rem 1rem !important;
             font-weight: 700 !important;
-            font-size: 1rem !important; /* Smaller font */
+            font-size: 1rem !important;
             box-shadow: 
-                0 8px 20px rgba(0, 0, 0, 0.1), /* Smaller shadow */
+                0 8px 20px rgba(0, 0, 0, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow: hidden;
             height: auto !important;
-            min-height: 90px !important; /* Reduced height */
+            min-height: 90px !important;
         }
         
         .stButton > button[kind="secondary"]::before {
@@ -682,14 +615,14 @@ def render_main_app():
         }
         
         .stButton > button[kind="secondary"]:hover::before {
-            width: 300px; /* Smaller ripple */
+            width: 300px;
             height: 300px;
         }
         
         .stButton > button[kind="secondary"]:hover:not(:disabled) {
-            transform: translateY(-5px) scale(1.03) rotateZ(-1deg) !important; /* Smaller transform */
+            transform: translateY(-5px) scale(1.03) rotateZ(-1deg) !important;
             box-shadow: 
-                0 15px 40px rgba(139, 30, 30, 0.3), /* Smaller shadow */
+                0 15px 40px rgba(139, 30, 30, 0.3),
                 0 0 35px rgba(255, 107, 53, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
             border-color: #ff6b35 !important;
@@ -698,26 +631,26 @@ def render_main_app():
         }
         
         .stButton > button[kind="secondary"]:active:not(:disabled) {
-            transform: translateY(-3px) scale(1.01) !important; /* Smaller transform */
+            transform: translateY(-3px) scale(1.01) !important;
         }
         
         [data-theme="dark"] .stButton > button[kind="secondary"] {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8)) !important;
             color: #f1f5f9 !important;
-            border: 2px solid rgba(255, 107, 53, 0.4) !important; /* Thinner border */
+            border: 2px solid rgba(255, 107, 53, 0.4) !important;
             box-shadow: 
-                0 8px 20px rgba(0, 0, 0, 0.4), /* Smaller shadow */
+                0 8px 20px rgba(0, 0, 0, 0.4),
                 0 0 15px rgba(255, 107, 53, 0.2) !important;
         }
         
-        /* SMALLER Neon Active Agent Box */
+        /* Neon Active Agent Box */
         .active-agent-neon {
             background: linear-gradient(135deg, rgba(139, 30, 30, 0.15), rgba(255, 107, 53, 0.1));
             backdrop-filter: blur(15px);
-            border: 2px solid transparent; /* Thinner border */
-            border-radius: 20px; /* Smaller radius */
-            padding: 1.5rem; /* Reduced padding */
-            margin: 2rem 0; /* Reduced margin */
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin: 2rem 0;
             position: relative;
             overflow: hidden;
             animation: neonPulse 3s ease-in-out infinite;
@@ -727,7 +660,7 @@ def render_main_app():
             content: '';
             position: absolute;
             inset: -2px;
-            border-radius: 20px; /* Smaller radius */
+            border-radius: 20px;
             background: linear-gradient(45deg, #ff6b35, #8b1e1e, #ff6b35);
             background-size: 300% 300%;
             animation: neonBorder 3s linear infinite;
@@ -747,8 +680,8 @@ def render_main_app():
         .active-agent-neon .title {
             color: #8b1e1e;
             font-weight: 800;
-            font-size: 1.2rem; /* Smaller font */
-            margin: 0 0 0.5rem 0; /* Reduced margin */
+            font-size: 1.2rem;
+            margin: 0 0 0.5rem 0;
             text-shadow: 0 0 8px rgba(139, 30, 30, 0.3);
         }
         
@@ -761,27 +694,27 @@ def render_main_app():
             text-shadow: 0 0 12px rgba(255, 107, 53, 0.5);
         }
         
-        /* SMALLER Cosmic Primary Buttons */
+        /* Cosmic Primary Buttons */
         .stButton > button[kind="primary"] {
             position: relative;
             background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 50%, #8b1e1e 100%) !important;
             background-size: 200% auto;
             animation: cosmicShift 3s linear infinite;
             border: none !important;
-            border-radius: 15px !important; /* Smaller radius */
-            padding: 1rem 2rem !important; /* Reduced padding */
+            border-radius: 15px !important;
+            padding: 1rem 2rem !important;
             font-weight: 800 !important;
-            font-size: 1rem !important; /* Smaller font */
+            font-size: 1rem !important;
             text-transform: uppercase;
-            letter-spacing: 1.5px; /* Reduced spacing */
+            letter-spacing: 1.5px;
             color: white !important;
             box-shadow: 
-                0 8px 25px rgba(139, 30, 30, 0.5), /* Smaller shadow */
+                0 8px 25px rgba(139, 30, 30, 0.5),
                 0 0 20px rgba(255, 107, 53, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
             transition: all 0.3s ease !important;
             overflow: hidden;
-            height: 50px !important; /* Fixed height */
+            height: 50px !important;
         }
         
         @keyframes cosmicShift {
@@ -795,7 +728,7 @@ def render_main_app():
             top: 50%;
             left: -50px;
             transform: translateY(-50%);
-            font-size: 1.2rem; /* Smaller sparkle */
+            font-size: 1.2rem;
             animation: sparkleMove 2s ease-in-out infinite;
         }
         
@@ -806,17 +739,17 @@ def render_main_app():
         }
         
         .stButton > button[kind="primary"]:hover {
-            transform: translateY(-5px) scale(1.03) !important; /* Smaller transform */
+            transform: translateY(-5px) scale(1.03) !important;
             box-shadow: 
-                0 15px 40px rgba(139, 30, 30, 0.6), /* Smaller shadow */
+                0 15px 40px rgba(139, 30, 30, 0.6),
                 0 0 35px rgba(255, 107, 53, 0.6) !important;
         }
         
-        /* SMALLER Holographic Dividers */
+        /* Holographic Dividers */
         hr {
-            margin: 2.5rem 0 !important; /* Reduced margin */
+            margin: 2.5rem 0 !important;
             border: none !important;
-            height: 1px !important; /* Thinner line */
+            height: 1px !important;
             background: linear-gradient(90deg, transparent, #ff6b35, #8b1e1e, #ff6b35, transparent) !important;
             background-size: 200% 100%;
             animation: holoDivider 3s linear infinite;
@@ -827,17 +760,17 @@ def render_main_app():
             50% { background-position: 100% center; }
         }
         
-        /* SMALLER Info Alert */
+        /* Info Alert */
         .stAlert {
             background: rgba(255, 255, 255, 0.8) !important;
             backdrop-filter: blur(15px) !important;
-            border: 1px solid rgba(255, 107, 53, 0.3) !important; /* Thinner border */
-            border-radius: 12px !important; /* Smaller radius */
-            border-left: 4px solid #ff6b35 !important; /* Thinner left border */
-            box-shadow: 0 6px 20px rgba(139, 30, 30, 0.15) !important; /* Smaller shadow */
+            border: 1px solid rgba(255, 107, 53, 0.3) !important;
+            border-radius: 12px !important;
+            border-left: 4px solid #ff6b35 !important;
+            box-shadow: 0 6px 20px rgba(139, 30, 30, 0.15) !important;
             font-weight: 600 !important;
             animation: alertGlow 2s ease-in-out infinite;
-            padding: 0.8rem !important; /* Reduced padding */
+            padding: 0.8rem !important;
         }
         
         @keyframes alertGlow {
@@ -847,7 +780,7 @@ def render_main_app():
         
         [data-theme="dark"] .stAlert {
             background: rgba(30, 30, 40, 0.8) !important;
-            border: 1px solid rgba(255, 107, 53, 0.4) !important; /* Thinner border */
+            border: 1px solid rgba(255, 107, 53, 0.4) !important;
         }
         
         /* Smooth Page Load Animation */
@@ -866,9 +799,9 @@ def render_main_app():
             }
         }
         
-        /* SMALLER Responsive Grid Gap */
+        /* Responsive Grid Gap */
         .row-widget.stHorizontal {
-            gap: 1.5rem !important; /* Reduced gap */
+            gap: 1.5rem !important;
         }
         
         /* Hide default elements */
@@ -884,10 +817,10 @@ def render_main_app():
         header_height=85
     )
 
-    # SMALLER Hero Banner
+    # Hero Banner
     st.markdown("""
     <div class="hero-banner">
-        <h2> AI-Powered Intelligence</h2>
+        <h2>🧠 AI-Powered Intelligence</h2>
         <p>Unleash specialized agents to decode your business challenges</p>
     </div>
     """, unsafe_allow_html=True)
@@ -904,18 +837,19 @@ def render_main_app():
     
     st.markdown("""
     <div class="section-header-magnetic">
-        <h3>AI Agent Arsenal</h3>
+        <h3>🤖 AI Agent Arsenal</h3>
     </div>
     """, unsafe_allow_html=True)
 
+    # 🔥 FIXED: Correct page paths for Streamlit Cloud
     agents = [
-        {"name": "Vocabulary Agent", "icon": "", "page": "pages/1__Vocabulary_Agent.py", "desc": "Decode industry terminology"},
-        {"name": "Current System Agent", "icon": "", "page": "pages/2__Current_System_Agent.py", "desc": "Analyze existing systems"},
-        {"name": "Volatility Agent", "icon": "", "page": "pages/3__Volatility_Agent.py", "desc": "Track market dynamics"},
-        {"name": "Ambiguity Agent", "icon": "", "page": "pages/4__Ambiguity_Agent.py", "desc": "Clarify uncertainties"},
-        {"name": "Interconnectedness Agent", "icon": "", "page": "pages/5__Interconnectedness_Agent.py", "desc": "Map relationships"},
-        {"name": "Uncertainty Agent", "icon": "", "page": "pages/6__Uncertainty_Agent.py", "desc": "Quantify risks"},
-        {"name": "Hardness Summary Agent", "icon": "", "page": "pages/7__Hardness_Summary_Agent.py", "desc": "Assess complexity"},
+        {"name": "Vocabulary Agent", "icon": "📚", "page": "pages/1__Vocabulary_Agent.py", "desc": "Decode industry terminology"},
+        {"name": "Current System Agent", "icon": "⚙️", "page": "pages/2__Current_System_Agent.py", "desc": "Analyze existing systems"},
+        {"name": "Volatility Agent", "icon": "📈", "page": "pages/3__Volatility_Agent.py", "desc": "Track market dynamics"},
+        {"name": "Ambiguity Agent", "icon": "🔍", "page": "pages/4__Ambiguity_Agent.py", "desc": "Clarify uncertainties"},
+        {"name": "Interconnectedness Agent", "icon": "🔗", "page": "pages/5__Interconnectedness_Agent.py", "desc": "Map relationships"},
+        {"name": "Uncertainty Agent", "icon": "⚠️", "page": "pages/6__Uncertainty_Agent.py", "desc": "Quantify risks"},
+        {"name": "Hardness Summary Agent", "icon": "📊", "page": "pages/7__Hardness_Summary_Agent.py", "desc": "Assess complexity"},
     ]
 
     if st.session_state.launched_agent:
@@ -923,7 +857,7 @@ def render_main_app():
         if active_agent:
             st.markdown(f"""
             <div class="active-agent-neon">
-                <p class="title">Active: {active_agent['icon']} {active_agent['name']}</p>
+                <p class="title">🎯 Active: {active_agent['icon']} {active_agent['name']}</p>
                 <p style="color: #64748b; font-weight: 500; margin: 0;">Currently deployed • {active_agent['desc']}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -931,7 +865,11 @@ def render_main_app():
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button(f"↩️ Return to {active_agent['icon']} {active_agent['name']}", use_container_width=True, type="primary"):
-                    st.switch_page(active_agent["page"])
+                    try:
+                        st.switch_page(active_agent["page"])
+                    except Exception as e:
+                        st.error(f"Navigation error: {str(e)}")
+                        st.info(f"Expected page: {active_agent['page']}")
 
     st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
 
@@ -953,9 +891,14 @@ def render_main_app():
                                help=agent['desc']):
                         if st.session_state.saved_problem:
                             st.session_state.launched_agent = agent["page"]
-                            st.switch_page(agent["page"])
+                            try:
+                                st.switch_page(agent["page"])
+                            except Exception as e:
+                                st.error(f"❌ Cannot navigate to {agent['name']}")
+                                st.info(f"Looking for: {agent['page']}")
+                                st.info(f"Make sure file exists at: {os.path.join(os.getcwd(), agent['page'])}")
                         else:
-                            st.warning("Please save your business problem details first")
+                            st.warning("⚠️ Please save your business problem details first")
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
@@ -973,23 +916,28 @@ def render_main_app():
                    help=agent['desc']):
             if st.session_state.saved_problem:
                 st.session_state.launched_agent = agent["page"]
-                st.switch_page(agent["page"])
+                try:
+                    st.switch_page(agent["page"])
+                except Exception as e:
+                    st.error(f"❌ Cannot navigate to {agent['name']}")
+                    st.info(f"Looking for: {agent['page']}")
+                    st.info(f"Make sure file exists at: {os.path.join(os.getcwd(), agent['page'])}")
             else:
-                st.warning("Please save your business problem details first")
+                st.warning("⚠️ Please save your business problem details first")
 
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button("Logout & Reset", use_container_width=True, type="primary"):
+        if st.button("🚪 Logout & Reset", use_container_width=True, type="primary"):
             st.session_state.launched_agent = None
             st.session_state.edit_confirmed = False
             st.balloons()
-            st.success("Session reset successfully!")
+            st.success("✅ Session reset successfully!")
             st.rerun()
 
 
 def _render_admin_confirmation():
-    """Admin confirmation with SMALLER design"""
+    """Admin confirmation page"""
     render_header(
         agent_name="Admin Access Required",
         agent_subtitle="Secure authentication required",
@@ -1003,18 +951,18 @@ def _render_admin_confirmation():
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 50vh; /* Reduced height */
+            min-height: 50vh;
         }
         
         .admin-confirm-card {
-            max-width: 500px; /* Smaller width */
+            max-width: 500px;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(25px) saturate(180%);
             border: 2px solid rgba(139, 30, 30, 0.2);
-            border-radius: 25px; /* Smaller radius */
-            padding: 2.5rem 2.5rem; /* Reduced padding */
+            border-radius: 25px;
+            padding: 2.5rem 2.5rem;
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.15), /* Smaller shadow */
+                0 20px 60px rgba(0, 0, 0, 0.15),
                 0 0 40px rgba(255, 107, 53, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.9);
             position: relative;
@@ -1039,7 +987,7 @@ def _render_admin_confirmation():
             top: 0;
             left: 0;
             right: 0;
-            height: 4px; /* Thinner border */
+            height: 4px;
             background: linear-gradient(90deg, #8b1e1e, #ff6b35, #8b1e1e);
             background-size: 200% 100%;
             animation: borderFlow 3s linear infinite;
@@ -1051,10 +999,10 @@ def _render_admin_confirmation():
         }
         
         .admin-confirm-card h2 {
-            font-size: 2rem; /* Smaller font */
+            font-size: 2rem;
             font-weight: 900;
             text-align: center;
-            margin: 0 0 0.8rem 0; /* Reduced margin */
+            margin: 0 0 0.8rem 0;
             background: linear-gradient(135deg, #8b1e1e, #ff6b35);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -1064,7 +1012,7 @@ def _render_admin_confirmation():
         .admin-confirm-card p {
             text-align: center;
             color: #64748b;
-            font-size: 1rem; /* Smaller font */
+            font-size: 1rem;
             font-weight: 500;
             margin: 0;
         }
@@ -1073,7 +1021,7 @@ def _render_admin_confirmation():
             background: rgba(20, 20, 30, 0.8);
             border: 2px solid rgba(255, 107, 53, 0.3);
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.4), /* Smaller shadow */
+                0 20px 60px rgba(0, 0, 0, 0.4),
                 0 0 40px rgba(255, 107, 53, 0.3);
         }
         
@@ -1092,7 +1040,7 @@ def _render_admin_confirmation():
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("Authenticate", key="open_admin_view_btn", use_container_width=True, type="primary"):
+        if st.button("🔓 Authenticate", key="open_admin_view_btn", use_container_width=True, type="primary"):
             st.session_state.admin_view_selected = True
             st.session_state.current_page = 'admin'
             st.session_state.page = 'admin'
@@ -1100,7 +1048,7 @@ def _render_admin_confirmation():
         
         st.markdown("<div style='height: 0.8rem;'></div>", unsafe_allow_html=True)
         
-        if st.button("Cancel", key="cancel_admin_view_btn", use_container_width=True):
+        if st.button("❌ Cancel", key="cancel_admin_view_btn", use_container_width=True):
             st.session_state.show_admin_panel = False
             st.session_state.admin_view_selected = False
             st.session_state.current_page = ''
@@ -1109,7 +1057,7 @@ def _render_admin_confirmation():
 
 
 def _render_admin_panel():
-    """Admin panel with SMALLER dashboard design"""
+    """Admin panel with dashboard"""
     render_header(
         agent_name="Admin Dashboard",
         agent_subtitle="Analytics & Feedback Management",
@@ -1121,11 +1069,11 @@ def _render_admin_panel():
     <style>
         .admin-dash-header {
             background: linear-gradient(135deg, #8b1e1e 0%, #6b1515 50%, #ff6b35 100%);
-            padding: 2rem; /* Reduced padding */
-            border-radius: 20px; /* Smaller radius */
-            margin-bottom: 2rem; /* Reduced margin */
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
             box-shadow: 
-                0 12px 40px rgba(139, 30, 30, 0.4), /* Smaller shadow */
+                0 12px 40px rgba(139, 30, 30, 0.4),
                 0 0 40px rgba(255, 107, 53, 0.3);
             position: relative;
             overflow: hidden;
@@ -1149,42 +1097,42 @@ def _render_admin_panel():
         
         .admin-dash-header h2 {
             color: white;
-            font-size: 2rem; /* Smaller font */
+            font-size: 2rem;
             font-weight: 900;
             text-align: center;
             margin: 0;
             position: relative;
             z-index: 1;
-            text-shadow: 0 3px 15px rgba(0, 0, 0, 0.3); /* Smaller shadow */
+            text-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
         }
         
         .admin-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(15px);
             border: 2px solid rgba(139, 30, 30, 0.15);
-            border-radius: 15px; /* Smaller radius */
-            padding: 2rem; /* Reduced padding */
-            margin: 1.5rem 0; /* Reduced margin */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Smaller shadow */
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
         
         .admin-card:hover {
-            transform: translateY(-3px); /* Smaller lift */
-            box-shadow: 0 12px 35px rgba(139, 30, 30, 0.2); /* Smaller shadow */
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(139, 30, 30, 0.2);
         }
         
         [data-theme="dark"] .admin-card {
             background: rgba(30, 41, 59, 0.8);
             border: 2px solid rgba(255, 107, 53, 0.25);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); /* Smaller shadow */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         }
         
         .admin-card h3 {
             color: #1e293b;
-            font-size: 1.5rem; /* Smaller font */
+            font-size: 1.5rem;
             font-weight: 800;
-            margin: 0 0 1rem 0; /* Reduced margin */
+            margin: 0 0 1rem 0;
         }
         
         [data-theme="dark"] .admin-card h3 {
@@ -1194,15 +1142,15 @@ def _render_admin_panel():
         .stat-metric {
             background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(139,30,30,0.1));
             border: 2px solid rgba(255,107,53,0.2);
-            border-radius: 12px; /* Smaller radius */
-            padding: 1.5rem 1rem; /* Reduced padding */
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
             text-align: center;
             transition: all 0.3s ease;
         }
         
         .stat-metric:hover {
-            transform: scale(1.03) translateY(-3px); /* Smaller transform */
-            box-shadow: 0 8px 25px rgba(255,107,53,0.3); /* Smaller shadow */
+            transform: scale(1.03) translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255,107,53,0.3);
             border-color: #ff6b35;
         }
         
@@ -1213,7 +1161,7 @@ def _render_admin_panel():
     </style>
     
     <div class="admin-dash-header">
-        <h2>Control Center</h2>
+        <h2>🎛️ Control Center</h2>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1246,15 +1194,15 @@ def _render_admin_panel():
         
         if password and password == ADMIN_PASSWORD:
             st.session_state.admin_authenticated = True
-            st.success("Access Granted")
+            st.success("✅ Access Granted")
             st.markdown("</div>", unsafe_allow_html=True)
             _render_admin_dashboard()
         elif password and password != "":
             st.session_state.admin_authenticated = False
-            st.error("Access Denied")
+            st.error("❌ Access Denied")
             st.markdown("</div>", unsafe_allow_html=True)
         else:
-            st.info("Enter credentials")
+            st.info("🔑 Enter credentials")
             st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1270,7 +1218,7 @@ def _render_admin_dashboard():
     
     with col_filter1:
         agent_filter = st.selectbox(
-            "Agent:",
+            "🤖 Agent:",
             options=[
                 "All Agents",
                 "Vocabulary Agent",
@@ -1301,13 +1249,13 @@ def _render_admin_dashboard():
         try:
             df = pd.read_csv(FEEDBACK_FILE)
         except Exception as e:
-            st.warning(f"Error: {e}")
+            st.warning(f"⚠️ Error: {e}")
             df = None
 
     if df is None or df.empty:
         if 'feedback_data' in st.session_state and not st.session_state.feedback_data.empty:
             df = st.session_state.feedback_data.copy()
-            st.info("Session data (cloud mode)")
+            st.info("📊 Session data (cloud mode)")
         else:
             df = None
 
@@ -1320,10 +1268,10 @@ def _render_admin_dashboard():
         if feedback_type_filter != "All Feedback Types":
             filtered_df = filtered_df[filtered_df['FeedbackType'] == feedback_type_filter]
 
-        st.info(f"Showing **{len(filtered_df)}** of **{len(df)}** entries")
+        st.info(f"📊 Showing **{len(filtered_df)}** of **{len(df)}** entries")
 
         if not filtered_df.empty:
-            st.dataframe(filtered_df, use_container_width=True, height=350) # Smaller height
+            st.dataframe(filtered_df, use_container_width=True, height=350)
 
             feedback_csv = filtered_df.to_csv(index=False).encode("utf-8")
             
@@ -1333,7 +1281,7 @@ def _render_admin_dashboard():
             col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
             with col_dl2:
                 st.download_button(
-                    "⬇Download Report",
+                    "⬇️ Download Report",
                     feedback_csv,
                     download_filename,
                     "text/csv",
@@ -1341,9 +1289,9 @@ def _render_admin_dashboard():
                     type="primary"
                 )
         else:
-            st.warning("No matching feedback")
+            st.warning("⚠️ No matching feedback")
     else:
-        st.info("No feedback data available")
+        st.info("💡 No feedback data available")
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -1354,15 +1302,15 @@ def _render_admin_dashboard():
         
         with col1:
             st.markdown("<div class='stat-metric'>", unsafe_allow_html=True)
-            st.metric("Total", len(df))
+            st.metric("📊 Total", len(df))
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
             st.markdown("<div class='stat-metric'>", unsafe_allow_html=True)
             if 'Agent' in df.columns:
-                st.metric("Agents", df['Agent'].nunique())
+                st.metric("🤖 Agents", df['Agent'].nunique())
             else:
-                st.metric("Agents", "N/A")
+                st.metric("🤖 Agents", "N/A")
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col3:
@@ -1374,11 +1322,11 @@ def _render_admin_dashboard():
                     current_year = datetime.now().year
                     this_month = len(df[(df['Timestamp'].dt.month == current_month) & 
                                        (df['Timestamp'].dt.year == current_year)])
-                    st.metric("This Month", this_month)
+                    st.metric("📅 This Month", this_month)
                 except:
-                    st.metric("This Month", "N/A")
+                    st.metric("📅 This Month", "N/A")
             else:
-                st.metric("This Month", "N/A")
+                st.metric("📅 This Month", "N/A")
             st.markdown("</div>", unsafe_allow_html=True)
 
     
