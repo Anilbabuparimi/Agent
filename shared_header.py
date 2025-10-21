@@ -1003,10 +1003,10 @@ def get_shared_data():
     }
 
 def render_unified_business_inputs(page_key_prefix: str = "global", show_titles: bool = True,
-                                       title_account_industry: str = "Account & Industry",
-                                       title_problem: str = "Share your Problem Statement",
-                                       save_button_label: str = "✅ Save Problem Details"):
-    """FIXED VERSION: Render a standardized Account/Industry + Business Problem input UI."""
+                                   title_account_industry: str = "Account & Industry",
+                                   title_problem: str = "Business Problem Description",
+                                   save_button_label: str = "✅ Save Problem Details"):
+    """Render a standardized Account/Industry + Business Problem input UI."""
     
     # Initialize saved state
     if 'saved_account' not in st.session_state:
@@ -1016,7 +1016,7 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if 'saved_problem' not in st.session_state:
         st.session_state.saved_problem = ""
 
-    # Working values - initialize with saved values
+    # Working values
     if 'business_account' not in st.session_state:
         st.session_state.business_account = st.session_state.saved_account
     if 'business_industry' not in st.session_state:
@@ -1032,28 +1032,23 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if 'selectbox_key_counter' not in st.session_state:
         st.session_state.selectbox_key_counter = 0
 
+    # 🔥 ADD: Track if problem has been changed
+    if 'problem_changed' not in st.session_state:
+        st.session_state.problem_changed = False
+
     # Enhanced input styles with better visibility
     st.markdown("""
     <style>
         .stSelectbox { margin-bottom: 1rem; }
         .stSelectbox > label { font-weight:700!important; font-size:1rem!important; margin-bottom:0.5rem!important; color: inherit !important; }
         .stSelectbox > div > div { border:2px solid rgba(139,30,30,0.4)!important; border-radius:10px!important; padding:0.5rem 0.75rem!important; min-height:42px!important; max-height:42px!important; display:flex!important; align-items:center!important; }
-        .stSelectbox [data-baseweb="select"] { min-height:36px!important; max-height:36px!important; }
-        .stSelectbox [data-baseweb="select"] > div { font-size:0.95rem!important; font-weight:600!important; line-height:1.3!important; white-space:nowrap!important; overflow:hidden!important; text-overflow:ellipsis!important; padding:0!important; display:flex!important; align-items:center!important; }
         .stTextArea textarea { border:2px solid rgba(139,30,30,0.3)!important; border-radius:10px!important; font-size:1.05rem!important; padding:1.25rem!important; line-height:1.7!important; min-height:180px!important; font-weight:500!important; }
         .section-title-box { background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 100%)!important; border-radius:10px; padding:1rem 2rem; margin:0 0 1rem 0!important; text-align:center; box-shadow: 0 4px 12px rgba(139,30,30,0.3); }
         .section-title-box h3 { color:#ffffff!important; margin:0!important; font-weight:700!important; font-size:1.3rem!important; text-shadow: none !important; }
         
-        /* Auto-mapping indicator */
-        .auto-mapped-indicator { 
-            background: rgba(139,30,30,0.1); 
-            border: 1px solid rgba(139,30,30,0.3); 
-            border-radius: 6px; 
-            padding: 4px 8px; 
-            font-size: 0.8rem; 
-            color: #8b1e1e; 
-            margin-top: 4px;
-        }
+        /* Button container styling */
+        .button-container { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .button-container .stButton { flex: 1; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1061,23 +1056,55 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if show_titles:
         st.markdown(f'<div class="section-title-box"><h3>{title_account_industry}</h3></div>', unsafe_allow_html=True)
 
-    # Use the FIXED account/industry selectors
-    selection_result = render_account_industry_selectors(page_key_prefix)
-    
-    # Show auto-mapping indicator if applicable
-    current_account = st.session_state.business_account
-    if current_account != "Select Account" and current_account in ACCOUNT_INDUSTRY_MAP:
-        mapped_industry = ACCOUNT_INDUSTRY_MAP[current_account]
-        st.markdown(f'<div class="auto-mapped-indicator">🔗 Auto-mapped to: <strong>{mapped_industry}</strong></div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
 
-    # Confirmation dialog for account change (only when there's existing saved problem)
     show_confirmation = False
-    if (st.session_state.saved_problem and 
-        st.session_state.business_account != st.session_state.saved_account and
-        not st.session_state.edit_confirmed and
-        not st.session_state.cancel_clicked):
-        show_confirmation = True
+    account_change_value = None
 
+    with c1:
+        account_input = st.selectbox(
+            "Select Account:",
+            options=ACCOUNTS,
+            index=ACCOUNTS.index(st.session_state.business_account) if st.session_state.business_account in ACCOUNTS else 0,
+            key=f"{page_key_prefix}_account_select_{st.session_state.selectbox_key_counter}"
+        )
+
+        # Handle account change
+        if account_input != st.session_state.business_account:
+            if st.session_state.cancel_clicked:
+                st.session_state.cancel_clicked = False
+            elif st.session_state.saved_problem and not st.session_state.edit_confirmed:
+                show_confirmation = True
+                account_change_value = account_input
+            else:
+                st.session_state.business_account = account_input
+                # Auto-map industry
+                if account_input in ACCOUNT_INDUSTRY_MAP:
+                    mapped_industry = ACCOUNT_INDUSTRY_MAP[account_input]
+                    st.session_state.business_industry = mapped_industry
+                    st.rerun()
+
+    with c2:
+        current_industry = st.session_state.business_industry
+        current_account = st.session_state.business_account
+        
+        is_auto_mapped = current_account in ACCOUNT_INDUSTRY_MAP and current_account != "Select Account"
+        
+        industry_index = INDUSTRIES.index(current_industry) if current_industry in INDUSTRIES else 0
+        
+        industry_input = st.selectbox(
+            "Industry:", 
+            options=INDUSTRIES,
+            index=industry_index,
+            disabled=is_auto_mapped,
+            help="Industry is automatically mapped for this account" if is_auto_mapped else "Select the industry for this analysis",
+            key=f"{page_key_prefix}_industry_select_{st.session_state.selectbox_key_counter}"
+        )
+        
+        if not is_auto_mapped and industry_input != st.session_state.business_industry:
+            st.session_state.business_industry = industry_input
+
+    # Confirmation dialog for account change
     if show_confirmation:
         st.markdown("""
             <style>
@@ -1094,15 +1121,18 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         """, unsafe_allow_html=True)
         colA, colB, colC, colD, colE = st.columns([3, 1.2, 0.6, 1.2, 3])
         with colB:
-            if st.button("Yes", key=f"{page_key_prefix}_confirm_edit_fixed", type="primary"):
+            if st.button("Yes", key=f"{page_key_prefix}_confirm_edit", type="primary"):
                 st.session_state.edit_confirmed = True
-                # Industry already auto-mapped by render_account_industry_selectors
+                st.session_state.business_account = account_change_value
+                if account_change_value in ACCOUNT_INDUSTRY_MAP:
+                    mapped_industry = ACCOUNT_INDUSTRY_MAP[account_change_value]
+                    st.session_state.business_industry = mapped_industry
                 st.session_state.selectbox_key_counter += 1
-                # Show Save button after user clicks "Yes" in ALL pages
                 st.session_state[f'{page_key_prefix}_show_save_btn'] = True
+                st.session_state.problem_changed = True  # 🔥 Mark as changed
                 _safe_rerun()
         with colD:
-            if st.button("No", key=f"{page_key_prefix}_cancel_edit_fixed", type="secondary"):
+            if st.button("No", key=f"{page_key_prefix}_cancel_edit", type="secondary"):
                 st.session_state.cancel_clicked = True
                 st.session_state.business_account = st.session_state.saved_account
                 st.session_state.business_industry = st.session_state.saved_industry
@@ -1119,38 +1149,101 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         height=180,
         placeholder="Feel free to just type down your problem statement, or copy-paste if you have it handy somewhere...",
         label_visibility="collapsed",
-        key=f"{page_key_prefix}_problem_textarea_fixed"
+        key=f"{page_key_prefix}_problem_textarea"
     )
+
+    # 🔥 DETECT PROBLEM CHANGES AND SHOW CONFIRMATION
     if problem_input != st.session_state.business_problem:
         st.session_state.business_problem = problem_input
+        
+        # Only show confirmation if there was previously a saved problem
+        if st.session_state.saved_problem and st.session_state.saved_problem.strip():
+            st.session_state.problem_changed = True
+            st.session_state[f'{page_key_prefix}_show_save_btn'] = True
+            
+            # Show confirmation message
+            st.markdown("""
+                <style>
+                .problem-change-confirmation { 
+                    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15)); 
+                    border: 2px solid rgba(255,165,0,0.4); 
+                    border-radius: 10px; 
+                    padding: 16px 20px; 
+                    box-shadow: 0 4px 12px rgba(255,165,0,0.2); 
+                    margin: 15px 0; 
+                }
+                .problem-change-message { 
+                    color: #8b5a00; 
+                    font-size: 15px; 
+                    font-weight: 600; 
+                    margin-bottom: 0; 
+                    text-align: center; 
+                    text-shadow: none !important; 
+                }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+                <div class="problem-change-confirmation">
+                    <div class="problem-change-message">
+                        ✏️ <strong>Problem statement updated</strong><br>
+                        <span style="font-size: 13px; font-weight: 500; color: #666;">
+                            Click "Save Problem Details" to confirm your changes.
+                        </span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
-    # Add a new parameter to control Save button visibility
-    default_show = True if page_key_prefix == "main_app" else False
-    show_save_button = st.session_state.get(f'{page_key_prefix}_show_save_btn', default_show)
-    
-    # Show Save button based on session state
-    if show_save_button:
-        if st.button(save_button_label, use_container_width=True, type="primary", key=f"{page_key_prefix}_save_btn_fixed"):
-            if (st.session_state.business_account == "Select Account" or
-                st.session_state.business_industry == "Select Industry" or
-                not st.session_state.business_problem.strip()):
-                st.error("⚠️ Please select an Account, Industry, and provide a Business Problem description.")
-            else:
-                st.session_state.saved_account = st.session_state.business_account
-                st.session_state.saved_industry = st.session_state.business_industry
-                st.session_state.saved_problem = st.session_state.business_problem
-                st.session_state.edit_confirmed = False
-                # Hide Save button after successful save in ALL pages
-                st.session_state[f'{page_key_prefix}_show_save_btn'] = False
-                st.success("✅ Problem details saved!")
-                _safe_rerun()
+    # 🔥 SIMPLIFIED BUTTON LOGIC: Only show buttons when problem is changed
+    has_unsaved_changes = (
+        st.session_state.business_account != st.session_state.saved_account or
+        st.session_state.business_industry != st.session_state.saved_industry or
+        st.session_state.business_problem != st.session_state.saved_problem
+    )
+
+    # Show buttons only when there are unsaved changes
+    if has_unsaved_changes:
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            if st.button(save_button_label, use_container_width=True, type="primary", key=f"{page_key_prefix}_save_btn"):
+                if (st.session_state.business_account == "Select Account" or
+                    st.session_state.business_industry == "Select Industry" or
+                    not st.session_state.business_problem.strip()):
+                    st.error("⚠️ Please select an Account, Industry, and provide a Business Problem description.")
+                else:
+                    st.session_state.saved_account = st.session_state.business_account
+                    st.session_state.saved_industry = st.session_state.business_industry
+                    st.session_state.saved_problem = st.session_state.business_problem
+                    st.session_state.edit_confirmed = False
+                    st.session_state.problem_changed = False  # 🔥 Reset changed flag
+                    st.success("✅ Problem details saved!")
+                    _safe_rerun()
+        
+        with col2:
+            if st.button("📋 Extract & Copy", use_container_width=True, key=f"{page_key_prefix}_extract_btn"):
+                problem_text = st.session_state.business_problem
+                if problem_text:
+                    st.session_state.extracted_text = problem_text
+                    st.success("Problem statement copied to clipboard!")
+                else:
+                    st.warning("No problem statement to extract")
+
+    # Show Edit button only when there's saved content but no current changes
+    elif st.session_state.saved_problem and st.session_state.saved_problem.strip() and not has_unsaved_changes:
+        if st.button("✏️ Edit Problem", use_container_width=True, key=f"{page_key_prefix}_edit_btn"):
+            # Set the current values to match saved values for editing
+            st.session_state.business_account = st.session_state.saved_account
+            st.session_state.business_industry = st.session_state.saved_industry
+            st.session_state.business_problem = st.session_state.saved_problem
+            st.session_state.problem_changed = True  # 🔥 Mark as changed to show buttons
+            _safe_rerun()
 
     return (
         st.session_state.business_account,
         st.session_state.business_industry,
         st.session_state.business_problem,
     )
-
 
 
 def render_admin_panel(admin_password="admin123"):
@@ -1334,6 +1427,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
