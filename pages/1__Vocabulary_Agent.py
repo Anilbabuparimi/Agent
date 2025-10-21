@@ -718,13 +718,20 @@ if not st.session_state.get('feedback_submitted', False):
 
             selected_issues = {}
             
-            # Create dropdowns for each section
+            # Create dropdowns for each section dynamically
             if sections_data:
                 for section_name, items in sections_data.items():
+                    # Remove "Section X: " prefix for cleaner display
+                    display_section_name = section_name.replace('Section 1: ', '').replace('Section 2: ', '').replace('Section 3: ', '').replace('Section 4: ', '')
+                    
+                    # For Section 4, just show heading without dropdown
+                    if section_name.startswith('Section 4:'):
+                        st.markdown(f"### {display_section_name}")
+                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                        continue
+                    
+                    # For Sections 1, 2, 3 - show dropdowns with options
                     if items:  # Only show sections that have items
-                        # Remove "Section X: " prefix for cleaner display
-                        display_section_name = section_name.replace('Section 1: ', '').replace('Section 2: ', '').replace('Section 3: ', '').replace('Section 4: ', '')
-                        
                         st.markdown(f"### {display_section_name}")
                         
                         # Extract just the display text for multiselect options (terms only, no numbers)
@@ -757,15 +764,17 @@ if not st.session_state.get('feedback_submitted', False):
                     "Identify Relevant Business Processes": [
                         "Account Management Process", "Sales Strategy Development", 
                         "Customer Feedback Loop"
-                    ],
-                    "Present a Cohesive Narrative": [
-                        "Business Problem Context", "Performance Indicators", 
-                        "Upstream Processes", "Interconnectedness Analysis"
                     ]
                 }
                 
                 for section_name, options in fallback_sections.items():
                     st.markdown(f"### {section_name}")
+                    
+                    # For Section 4, just show heading without dropdown
+                    if section_name == "Present a Cohesive Narrative":
+                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                        continue
+                    
                     selected_items = st.multiselect(
                         f"Select problematic terms in {section_name}:",
                         options=options,
@@ -774,16 +783,20 @@ if not st.session_state.get('feedback_submitted', False):
                     )
                     if selected_items:
                         selected_issues[section_name] = selected_items
+                
+                # Add Section 4 separately as just heading
+                st.markdown("### Present a Cohesive Narrative")
+                st.info("This section contains narrative content. Please provide general feedback in the comments below.")
 
             additional_feedback = st.text_area(
                 "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found..."
+                placeholder="Please provide more details about the definition issues you found, including any feedback on Section 4 narrative content..."
             )
 
             submitted = st.form_submit_button("📨 Submit Feedback")
             if submitted:
-                if not selected_issues:
-                    st.warning("⚠️ Please select at least one term that has definition issues.")
+                if not selected_issues and not additional_feedback.strip():
+                    st.warning("⚠️ Please select at least one term that has definition issues or provide comments.")
                 else:
                     # Format issues for submission
                     issues_list = []
@@ -791,7 +804,7 @@ if not st.session_state.get('feedback_submitted', False):
                         for item in items:
                             issues_list.append(f"{section} - {item}")
                     
-                    off_defs_text = " | ".join(issues_list)
+                    off_defs_text = " | ".join(issues_list) if issues_list else "No specific terms selected"
                     if submit_feedback(fb_choice, user_id=user_id, off_definitions=off_defs_text, additional_feedback=additional_feedback):
                         st.success("✅ Thank you! Your feedback has been submitted.")
 
@@ -903,6 +916,14 @@ st.markdown("""
         border-color: #8b1e1e !important;
         box-shadow: 0 0 0 1px #8b1e1e !important;
     }
+    
+    /* Section heading styling */
+    h3 {
+        color: #ffffff !important;
+        border-bottom: 1px solid #444444;
+        padding-bottom: 8px;
+        margin-top: 20px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 # ===============================
@@ -956,5 +977,6 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
