@@ -477,7 +477,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
     display_account = globals().get("display_account") or st.session_state.get("saved_account", "Unknown Company")
     display_industry = globals().get("display_industry") or st.session_state.get("saved_industry", "Unknown Industry")
 
-    # Section header - Same as other agents
+    # Section header - Updated to match Vocabulary style
     st.markdown(
         f"""
         <div style="margin: 20px 0;">
@@ -487,9 +487,12 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                         Hardness Assessment
                     </h3>
                     <p style="font-size:0.95rem; color:white; margin:0; line-height:1.5; text-align:center; max-width: 800px;">
-                        This is an <strong>AI-generated Hardness Assessment</strong> for 
-                        <strong>{display_account}</strong> in the <strong>{display_industry}</strong> industry, 
-                        based on your problem statement.
+                        Please note that it is an <strong>AI-generated Hardness Assessment</strong>, derived from 
+                        the <em>company</em> <strong>{display_account}</strong> and 
+                        the <em>industry</em> <strong>{display_industry}</strong> based on the 
+                        <em>problem statement</em> you shared.<br>
+                        In case you find something off, there's a provision to share feedback at the bottom 
+                        we encourage you to use it.
                     </p>
                 </div>
             </div>
@@ -509,7 +512,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
     col1, col2 = st.columns(2)
 
     with col1:
-        # Overall Classification Box - Fixed height
+        # Overall Classification Box - Fixed height with red border
         if hardness_classification == "HARD":
             st.markdown(
                 f"""
@@ -520,7 +523,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     text-align: center;
                     color: white;
                     box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
-                    border: 3px solid #ff4757;
+                    border: 2px solid #8b1e1e;
                     height: 220px;
                     display: flex;
                     flex-direction: column;
@@ -547,7 +550,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     text-align: center;
                     color: white;
                     box-shadow: 0 8px 25px rgba(255, 165, 2, 0.3);
-                    border: 3px solid #ffa502;
+                    border: 2px solid #8b1e1e;
                     height: 220px;
                     display: flex;
                     flex-direction: column;
@@ -574,7 +577,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     text-align: center;
                     color: white;
                     box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
-                    border: 3px solid #2ecc71;
+                    border: 2px solid #8b1e1e;
                     height: 220px;
                     display: flex;
                     flex-direction: column;
@@ -593,7 +596,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
             )
 
     with col2:
-        # Overall Hardness Score Box - Same height as classification box
+        # Overall Hardness Score Box - Same height with red border
         if hardness_score is not None:
             if hardness_score >= 4.0:
                 score_color = "#ff6b6b"
@@ -612,8 +615,8 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     border-radius: 16px;
                     padding: 2rem;
                     text-align: center;
-                    border: 3px solid {score_color};
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                    border: 2px solid #8b1e1e;
+                    box-shadow: 0 3px 10px rgba(139,30,30,0.15);
                     height: 220px;
                     display: flex;
                     flex-direction: column;
@@ -646,8 +649,8 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     border-radius: 16px;
                     padding: 2rem;
                     text-align: center;
-                    border: 3px solid #ffa502;
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                    border: 2px solid #8b1e1e;
+                    box-shadow: 0 3px 10px rgba(139,30,30,0.15);
                     height: 220px;
                     display: flex;
                     flex-direction: column;
@@ -676,7 +679,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
     # API Output Box with proper title card - Same as other agents
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Title card for Detailed Hardness Analysis - Same style as other agents
+    # Title card for Detailed Hardness Analysis - Updated to match Vocabulary style
     st.markdown(
         f"""
         <div style="margin: 20px 0;">
@@ -710,7 +713,7 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
         # Convert section headers
         formatted_html = re.sub(
             r'(?m)^(Overall Difficulty Score|Hardness Level|SME Justification|Summary|Key Takeaways):?$',
-            r'<h4 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; margin: 1.5rem 0 1rem 0;">\1</h4>',
+            r'<h4 style="color: #8b1e1e; border-bottom: 2px solid #8b1e1e; padding-bottom: 0.5rem; margin: 1.5rem 0 1rem 0;">\1</h4>',
             formatted_html
         )
         
@@ -739,47 +742,79 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
         
         formatted_html = '\n'.join(formatted_lines)
 
-        # For each agent's content box:
-st.markdown(
-    f"""
-    <div style="
-        background: var(--bg-card);
-        border: 2px solid #8b1e1e;
-        border-radius: 16px;
-        padding: 1.6rem;
-        margin-bottom: 1.6rem;
-        box-shadow: 0 3px 10px rgba(139,30,30,0.15);
-    ">
-        <h4 style="
-            color: #8b1e1e;
-            font-weight: 700;
-            font-size: 1.15rem;
-            margin: 0 0 1rem 0;
-            border-bottom: 2px solid #8b1e1e;
-            padding-bottom: 0.5rem;
-            text-align: left;
-        ">
-            Your Title Here
-        </h4>
-        <div style="
-            color: var(--text-primary);
-            line-height: 1.3;
-            font-size: 1rem;
-            text-align: left;
-            white-space: normal;
-        ">
-            {your_content_here}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        # Content box with red border styling like Vocabulary
+        st.markdown(
+            f"""
+            <div style="
+                background: var(--bg-card);
+                border: 2px solid #8b1e1e;
+                border-radius: 16px;
+                padding: 1.6rem;
+                margin-bottom: 1.6rem;
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+            ">
+                <h4 style="
+                    color: #8b1e1e;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    margin: 0 0 1rem 0;
+                    border-bottom: 2px solid #8b1e1e;
+                    padding-bottom: 0.5rem;
+                    text-align: left;
+                ">
+                    Detailed Analysis
+                </h4>
+                <div style="
+                    color: var(--text-primary);
+                    line-height: 1.45;
+                    font-size: 1rem;
+                    text-align: left;
+                    white-space: normal;
+                ">
+                    {formatted_html}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:
-        st.info("""
-        **Note:** The hardness assessment is based solely on the problem statement provided. 
-        For a more comprehensive analysis, please ensure all previous agents (Ambiguity, Interconnectedness, Uncertainty) 
-        have been run first to provide detailed inputs for the hardness calculation.
-        """)
+        # Info box with red border
+        st.markdown(
+            f"""
+            <div style="
+                background: var(--bg-card);
+                border: 2px solid #8b1e1e;
+                border-radius: 16px;
+                padding: 1.6rem;
+                margin-bottom: 1.6rem;
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+            ">
+                <h4 style="
+                    color: #8b1e1e;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    margin: 0 0 1rem 0;
+                    border-bottom: 2px solid #8b1e1e;
+                    padding-bottom: 0.5rem;
+                    text-align: left;
+                ">
+                    Assessment Note
+                </h4>
+                <div style="
+                    color: var(--text-primary);
+                    line-height: 1.45;
+                    font-size: 1rem;
+                    text-align: left;
+                    white-space: normal;
+                ">
+                    The hardness assessment is based solely on the problem statement provided. 
+                    For a more comprehensive analysis, please ensure all previous agents (Ambiguity, Interconnectedness, Uncertainty) 
+                    have been run first to provide detailed inputs for the hardness calculation.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     # ===============================
     # User Feedback Section
     # ===============================
@@ -875,3 +910,4 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
