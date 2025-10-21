@@ -607,11 +607,10 @@ st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 
 st.markdown(
     "Please share your thoughts or suggestions after reviewing the vocabulary results.")
 
-# Extract sections and terms from vocabulary output
+# Enhanced section parsing function
 def parse_vocabulary_sections(vocab_text):
     sections = {}
     current_section = None
-    current_items = []
     
     if not vocab_text:
         return sections
@@ -624,34 +623,18 @@ def parse_vocabulary_sections(vocab_text):
         # Detect section headers (Section X: Title)
         section_match = re.match(r'^Section\s+(\d+):\s*(.+)$', line)
         if section_match:
-            # Save previous section if exists
-            if current_section:
-                sections[current_section] = current_items.copy()
-            
-            # Start new section
             section_num = section_match.group(1)
             section_title = section_match.group(2).strip()
             current_section = f"Section {section_num}: {section_title}"
-            current_items = []
+            sections[current_section] = []
             continue
         
         # Detect numbered items within sections (1. Term: Definition)
-        item_match = re.match(r'^(\d+)\.\s+(.+?):\s*(.+)$', line)
-        if item_match and current_section:
-            item_number = item_match.group(1)
-            item_term = item_match.group(2).strip()
-            item_definition = item_match.group(3).strip()
-            
-            # Store just the term without number for display
-            display_text = f"{item_term}"
-            current_items.append({
-                'display': display_text,
-                'full_text': f"{item_number}. {item_term}: {item_definition}"
-            })
-    
-    # Don't forget to add the last section
-    if current_section and current_items:
-        sections[current_section] = current_items.copy()
+        if current_section:
+            item_match = re.match(r'^(\d+)\.\s+(.+?):\s*(.+)$', line)
+            if item_match:
+                item_term = item_match.group(2).strip()
+                sections[current_section].append(item_term)
     
     return sections
 
@@ -680,18 +663,11 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("feedback_form_positive", clear_on_submit=True):
             st.info("Thank you for your positive feedback!")
             
-            # Auto-extracted user info from login (no manual input)
+            # Auto-extracted user info from login
             user_id = st.session_state.get('user_id', 'N/A')
             
-            # Display user info in dark mode styled boxes
-            st.markdown("**User Information:**")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.text_input("User ID", value=user_id, disabled=True, key="user_id_display")
-            with col2:
-                st.text_input("Account", value=display_account, disabled=True, key="account_display")
-            with col3:
-                st.text_input("Industry", value=display_industry, disabled=True, key="industry_display")
+            # Display only User ID
+            st.text_input("User ID", value=user_id, disabled=True, key="user_id_display")
             
             submitted = st.form_submit_button("📨 Submit Positive Feedback")
             if submitted:
@@ -703,54 +679,40 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("feedback_form_defs", clear_on_submit=True):
             st.markdown("**Please select which sections and terms have definitions that seem off:**")
             
-            # Auto-extracted user info from login (no manual input)
+            # Auto-extracted user info from login
             user_id = st.session_state.get('user_id', 'N/A')
             
-            # Display user info in dark mode styled boxes
-            st.markdown("**User Information:**")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.text_input("User ID", value=user_id, disabled=True, key="user_id_defs")
-            with col2:
-                st.text_input("Account", value=display_account, disabled=True, key="account_defs")
-            with col3:
-                st.text_input("Industry", value=display_industry, disabled=True, key="industry_defs")
+            # Display only User ID
+            st.text_input("User ID", value=user_id, disabled=True, key="user_id_defs")
 
             selected_issues = {}
             
-            # Create dropdowns for each section dynamically
+            # Create dropdowns for ALL sections
             if sections_data:
                 for section_name, items in sections_data.items():
-                    # Remove "Section X: " prefix for cleaner display
-                    display_section_name = section_name.replace('Section 1: ', '').replace('Section 2: ', '').replace('Section 3: ', '').replace('Section 4: ', '')
+                    # Clean section name for display
+                    display_section_name = section_name.replace('Section 1: ', '')\
+                                                      .replace('Section 2: ', '')\
+                                                      .replace('Section 3: ', '')\
+                                                      .replace('Section 4: ', '')
                     
-                    # For Section 4, just show heading without dropdown
-                    if section_name.startswith('Section 4:'):
-                        st.markdown(f"### {display_section_name}")
-                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
-                        continue
+                    st.markdown(f"**{display_section_name}**")
                     
-                    # For Sections 1, 2, 3 - show dropdowns with options
-                    if items:  # Only show sections that have items
-                        st.markdown(f"### {display_section_name}")
-                        
-                        # Extract just the display text for multiselect options (terms only, no numbers)
-                        options = [item['display'] for item in items]
-                        
+                    if items:  # If section has items, show dropdown
                         selected_items = st.multiselect(
                             f"Select problematic terms in {display_section_name}:",
-                            options=options,
+                            options=items,
                             key=f"multiselect_{section_name}",
                             help=f"Select terms from {display_section_name} that have definition issues"
                         )
                         
                         if selected_items:
                             selected_issues[section_name] = selected_items
+                    else:
+                        # For sections without specific items (like Section 4)
+                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
             else:
-                # Fallback if no sections parsed - using your example structure
-                st.warning("No vocabulary sections found to provide feedback on.")
-                
-                # Define fallback sections based on your example output
+                # Fallback sections when no data is parsed
                 fallback_sections = {
                     "Extract and Define Business Vocabulary Terms": [
                         "Managed Pros", "Account Support", "Growth Strategies", 
@@ -764,33 +726,29 @@ if not st.session_state.get('feedback_submitted', False):
                     "Identify Relevant Business Processes": [
                         "Account Management Process", "Sales Strategy Development", 
                         "Customer Feedback Loop"
-                    ]
+                    ],
+                    "Present a Cohesive Narrative": []
                 }
                 
                 for section_name, options in fallback_sections.items():
-                    st.markdown(f"### {section_name}")
+                    st.markdown(f"**{section_name}**")
                     
-                    # For Section 4, just show heading without dropdown
-                    if section_name == "Present a Cohesive Narrative":
+                    if options:  # Show dropdown for sections with options
+                        selected_items = st.multiselect(
+                            f"Select problematic terms in {section_name}:",
+                            options=options,
+                            key=f"fallback_{section_name}",
+                            help=f"Select terms from {section_name} that have definition issues"
+                        )
+                        if selected_items:
+                            selected_issues[section_name] = selected_items
+                    else:
+                        # For Section 4 - no dropdown, just info
                         st.info("This section contains narrative content. Please provide general feedback in the comments below.")
-                        continue
-                    
-                    selected_items = st.multiselect(
-                        f"Select problematic terms in {section_name}:",
-                        options=options,
-                        key=f"fallback_{section_name}",
-                        help=f"Select terms from {section_name} that have definition issues"
-                    )
-                    if selected_items:
-                        selected_issues[section_name] = selected_items
-                
-                # Add Section 4 separately as just heading
-                st.markdown("### Present a Cohesive Narrative")
-                st.info("This section contains narrative content. Please provide general feedback in the comments below.")
 
             additional_feedback = st.text_area(
                 "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found, including any feedback on Section 4 narrative content..."
+                placeholder="Please provide more details about the definition issues you found..."
             )
 
             submitted = st.form_submit_button("📨 Submit Feedback")
@@ -813,18 +771,11 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("feedback_form_suggestions", clear_on_submit=True):
             st.markdown("**Please share your suggestions for improvement:**")
             
-            # Auto-extracted user info from login (no manual input)
+            # Auto-extracted user info from login
             user_id = st.session_state.get('user_id', 'N/A')
             
-            # Display user info in dark mode styled boxes
-            st.markdown("**User Information:**")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.text_input("User ID", value=user_id, disabled=True, key="user_id_suggestions")
-            with col2:
-                st.text_input("Account", value=display_account, disabled=True, key="account_suggestions")
-            with col3:
-                st.text_input("Industry", value=display_industry, disabled=True, key="industry_suggestions")
+            # Display only User ID
+            st.text_input("User ID", value=user_id, disabled=True, key="user_id_suggestions")
             
             suggestions = st.text_area(
                 "Your suggestions:",
@@ -844,7 +795,7 @@ else:
         st.session_state.feedback_submitted = False
         st.rerun()
 
-# Add enhanced custom CSS for dark mode styling
+# Enhanced CSS for proper dark mode dropdown visibility
 st.markdown("""
 <style>
     /* Dark mode styling for disabled inputs */
@@ -855,61 +806,83 @@ st.markdown("""
         opacity: 0.8;
     }
     
-    /* Multiselect dark mode improvements */
+    /* MULTISELECT DROPDOWN FIXES - MAKE THEM VISIBLE */
     .stMultiSelect [data-baseweb="select"] {
-        background-color: #262730 !important;
-        border-color: #444444 !important;
+        background-color: #0e1117 !important;
+        border-color: #555555 !important;
+        color: white !important;
     }
     
+    /* Dropdown text color */
+    .stMultiSelect [data-baseweb="select"] div {
+        color: white !important;
+    }
+    
+    /* Dropdown placeholder */
+    .stMultiSelect [data-baseweb="select"]::placeholder {
+        color: #cccccc !important;
+    }
+    
+    /* Dropdown hover state */
     .stMultiSelect [data-baseweb="select"]:hover {
-        border-color: #666666 !important;
+        border-color: #8b1e1e !important;
     }
     
+    /* Dropdown focus state */
     .stMultiSelect [data-baseweb="select"]:focus-within {
         border-color: #8b1e1e !important;
-        box-shadow: 0 0 0 1px #8b1e1e !important;
+        box-shadow: 0 0 0 2px rgba(139, 30, 30, 0.2) !important;
     }
     
+    /* Dropdown popover/menu */
+    [data-baseweb="popover"] {
+        background-color: #1e1e1e !important;
+        border: 1px solid #555555 !important;
+    }
+    
+    /* Dropdown options list */
+    [role="listbox"] {
+        background-color: #1e1e1e !important;
+        color: white !important;
+    }
+    
+    /* Individual dropdown options */
+    [role="option"] {
+        background-color: #1e1e1e !important;
+        color: white !important;
+        padding: 8px 12px;
+    }
+    
+    /* Hovered dropdown option */
+    [role="option"]:hover {
+        background-color: #8b1e1e !important;
+        color: white !important;
+    }
+    
+    /* Selected dropdown option */
+    [aria-selected="true"] {
+        background-color: #8b1e1e !important;
+        color: white !important;
+    }
+    
+    /* Selected tags in multiselect */
     .stMultiSelect [data-baseweb="tag"] {
         background-color: #8b1e1e !important;
         color: white !important;
         border-radius: 12px !important;
+        font-weight: 500;
     }
     
-    .stMultiSelect [data-baseweb="popover"] {
-        background-color: #262730 !important;
-        border: 1px solid #444444 !important;
-    }
-    
-    .stMultiSelect [role="listbox"] {
-        background-color: #262730 !important;
-        color: white !important;
-    }
-    
-    .stMultiSelect [role="option"] {
-        background-color: #262730 !important;
-        color: white !important;
-    }
-    
-    .stMultiSelect [role="option"]:hover {
-        background-color: #8b1e1e !important;
-        color: white !important;
-    }
-    
-    /* Radio button dark mode improvements */
-    .stRadio [data-baseweb="radio"] {
-        background-color: transparent !important;
-    }
-    
+    /* Radio button styling */
     .stRadio [data-baseweb="radio"] div {
         color: white !important;
     }
     
-    /* Text area dark mode improvements */
+    /* Text area styling */
     .stTextArea [data-baseweb="textarea"] {
-        background-color: #262730 !important;
+        background-color: #0e1117 !important;
         color: white !important;
-        border-color: #444444 !important;
+        border-color: #555555 !important;
     }
     
     .stTextArea [data-baseweb="textarea"]:focus {
@@ -918,11 +891,28 @@ st.markdown("""
     }
     
     /* Section heading styling */
-    h3 {
+    .stMarkdown h3 {
         color: #ffffff !important;
         border-bottom: 1px solid #444444;
         padding-bottom: 8px;
         margin-top: 20px !important;
+    }
+    
+    /* Regular text styling */
+    .stMarkdown {
+        color: white !important;
+    }
+    
+    /* Make sure all text in forms is visible */
+    .stForm {
+        color: white !important;
+    }
+    
+    /* Info boxes */
+    .stInfo {
+        background-color: #1e1e1e !important;
+        border: 1px solid #555555 !important;
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -977,6 +967,7 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
 
