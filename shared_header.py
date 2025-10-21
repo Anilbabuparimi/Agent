@@ -352,7 +352,7 @@ def sync_theme_with_session():
         pass
 
 def render_header(
-    agent_name="Business Problem Analysis Platform",
+    agent_name="Business Problem Discovery Assistant",
     agent_subtitle="Specialized AI agents to extract, classify, and analyze key dimensions of your business challenges",
     enable_admin_access=True,
     header_height=85
@@ -1334,6 +1334,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
