@@ -820,8 +820,8 @@ def render_main_app():
     # Hero Banner
     st.markdown("""
     <div class="hero-banner">
-        <h2>🧠 AI-Powered Intelligence</h2>
-        <p>Unleash specialized agents to decode your business challenges</p>
+        <h2>Business Problem Discovery Assistant</h2>
+        <p>Unleash specialized agents to classify your business problems</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -837,19 +837,19 @@ def render_main_app():
     
     st.markdown("""
     <div class="section-header-magnetic">
-        <h3>🤖 AI Agent Arsenal</h3>
+        <h3>AI Agent Arsenal</h3>
     </div>
     """, unsafe_allow_html=True)
 
     # 🔥 FIXED: Correct page paths for Streamlit Cloud
     agents = [
-        {"name": "Vocabulary Agent", "icon": "📚", "page": "pages/1__Vocabulary_Agent.py", "desc": "Decode industry terminology"},
-        {"name": "Current System Agent", "icon": "⚙️", "page": "pages/2__Current_System_Agent.py", "desc": "Analyze existing systems"},
-        {"name": "Volatility Agent", "icon": "📈", "page": "pages/3__Volatility_Agent.py", "desc": "Track market dynamics"},
-        {"name": "Ambiguity Agent", "icon": "🔍", "page": "pages/4__Ambiguity_Agent.py", "desc": "Clarify uncertainties"},
-        {"name": "Interconnectedness Agent", "icon": "🔗", "page": "pages/5__Interconnectedness_Agent.py", "desc": "Map relationships"},
-        {"name": "Uncertainty Agent", "icon": "⚠️", "page": "pages/6__Uncertainty_Agent.py", "desc": "Quantify risks"},
-        {"name": "Hardness Summary Agent", "icon": "📊", "page": "pages/7__Hardness_Summary_Agent.py", "desc": "Assess complexity"},
+        {"name": "Vocabulary Agent", "icon": "", "page": "pages/1__Vocabulary_Agent.py", "desc": "Decode industry terminology"},
+        {"name": "Current System Agent", "icon": "", "page": "pages/2__Current_System_Agent.py", "desc": "Analyze existing systems"},
+        {"name": "Volatility Agent", "icon": "", "page": "pages/3__Volatility_Agent.py", "desc": "Track market dynamics"},
+        {"name": "Ambiguity Agent", "icon": "", "page": "pages/4__Ambiguity_Agent.py", "desc": "Clarify uncertainties"},
+        {"name": "Interconnectedness Agent", "icon": "", "page": "pages/5__Interconnectedness_Agent.py", "desc": "Map relationships"},
+        {"name": "Uncertainty Agent", "icon": "", "page": "pages/6__Uncertainty_Agent.py", "desc": "Quantify risks"},
+        {"name": "Hardness Summary Agent", "icon": "", "page": "pages/7__Hardness_Summary_Agent.py", "desc": "Assess complexity"},
     ]
 
     if st.session_state.launched_agent:
@@ -857,7 +857,7 @@ def render_main_app():
         if active_agent:
             st.markdown(f"""
             <div class="active-agent-neon">
-                <p class="title">🎯 Active: {active_agent['icon']} {active_agent['name']}</p>
+                <p class="title">Active: {active_agent['icon']} {active_agent['name']}</p>
                 <p style="color: #64748b; font-weight: 500; margin: 0;">Currently deployed • {active_agent['desc']}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -894,11 +894,11 @@ def render_main_app():
                             try:
                                 st.switch_page(agent["page"])
                             except Exception as e:
-                                st.error(f"❌ Cannot navigate to {agent['name']}")
+                                st.error(f"Cannot navigate to {agent['name']}")
                                 st.info(f"Looking for: {agent['page']}")
                                 st.info(f"Make sure file exists at: {os.path.join(os.getcwd(), agent['page'])}")
                         else:
-                            st.warning("⚠️ Please save your business problem details first")
+                            st.warning("Please save your business problem details first")
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
@@ -919,20 +919,20 @@ def render_main_app():
                 try:
                     st.switch_page(agent["page"])
                 except Exception as e:
-                    st.error(f"❌ Cannot navigate to {agent['name']}")
+                    st.error(f"Cannot navigate to {agent['name']}")
                     st.info(f"Looking for: {agent['page']}")
                     st.info(f"Make sure file exists at: {os.path.join(os.getcwd(), agent['page'])}")
             else:
-                st.warning("⚠️ Please save your business problem details first")
+                st.warning("Please save your business problem details first")
 
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button("🚪 Logout & Reset", use_container_width=True, type="primary"):
+        if st.button("Reset", use_container_width=True, type="primary"):
             st.session_state.launched_agent = None
             st.session_state.edit_confirmed = False
             st.balloons()
-            st.success("✅ Session reset successfully!")
+            st.success("Session reset successfully!")
             st.rerun()
 
 
@@ -1048,7 +1048,7 @@ def _render_admin_confirmation():
         
         st.markdown("<div style='height: 0.8rem;'></div>", unsafe_allow_html=True)
         
-        if st.button("❌ Cancel", key="cancel_admin_view_btn", use_container_width=True):
+        if st.button("Cancel", key="cancel_admin_view_btn", use_container_width=True):
             st.session_state.show_admin_panel = False
             st.session_state.admin_view_selected = False
             st.session_state.current_page = ''
@@ -1178,7 +1178,7 @@ def _render_admin_panel():
     st.markdown("<h3>🔐 Authentication</h3>", unsafe_allow_html=True)
     
     if not st.session_state.admin_access_requested:
-        st.info("💡 Secure access required")
+        st.info("Secure access required")
         col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
         with col_btn2:
             if st.button("🔓 Request Access", use_container_width=True, type="primary"):
@@ -1194,12 +1194,12 @@ def _render_admin_panel():
         
         if password and password == ADMIN_PASSWORD:
             st.session_state.admin_authenticated = True
-            st.success("✅ Access Granted")
+            st.success("Access Granted")
             st.markdown("</div>", unsafe_allow_html=True)
             _render_admin_dashboard()
         elif password and password != "":
             st.session_state.admin_authenticated = False
-            st.error("❌ Access Denied")
+            st.error("Access Denied")
             st.markdown("</div>", unsafe_allow_html=True)
         else:
             st.info("🔑 Enter credentials")
@@ -1218,7 +1218,7 @@ def _render_admin_dashboard():
     
     with col_filter1:
         agent_filter = st.selectbox(
-            "🤖 Agent:",
+            "Agent:",
             options=[
                 "All Agents",
                 "Vocabulary Agent",
@@ -1255,7 +1255,7 @@ def _render_admin_dashboard():
     if df is None or df.empty:
         if 'feedback_data' in st.session_state and not st.session_state.feedback_data.empty:
             df = st.session_state.feedback_data.copy()
-            st.info("📊 Session data (cloud mode)")
+            st.info("Session data (cloud mode)")
         else:
             df = None
 
@@ -1268,7 +1268,7 @@ def _render_admin_dashboard():
         if feedback_type_filter != "All Feedback Types":
             filtered_df = filtered_df[filtered_df['FeedbackType'] == feedback_type_filter]
 
-        st.info(f"📊 Showing **{len(filtered_df)}** of **{len(df)}** entries")
+        st.info(f"Showing **{len(filtered_df)}** of **{len(df)}** entries")
 
         if not filtered_df.empty:
             st.dataframe(filtered_df, use_container_width=True, height=350)
@@ -1289,9 +1289,9 @@ def _render_admin_dashboard():
                     type="primary"
                 )
         else:
-            st.warning("⚠️ No matching feedback")
+            st.warning("No matching feedback")
     else:
-        st.info("💡 No feedback data available")
+        st.info("No feedback data available")
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -1302,15 +1302,15 @@ def _render_admin_dashboard():
         
         with col1:
             st.markdown("<div class='stat-metric'>", unsafe_allow_html=True)
-            st.metric("📊 Total", len(df))
+            st.metric("Total", len(df))
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
             st.markdown("<div class='stat-metric'>", unsafe_allow_html=True)
             if 'Agent' in df.columns:
-                st.metric("🤖 Agents", df['Agent'].nunique())
+                st.metric("Agents", df['Agent'].nunique())
             else:
-                st.metric("🤖 Agents", "N/A")
+                st.metric("Agents", "N/A")
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col3:
@@ -1322,11 +1322,11 @@ def _render_admin_dashboard():
                     current_year = datetime.now().year
                     this_month = len(df[(df['Timestamp'].dt.month == current_month) & 
                                        (df['Timestamp'].dt.year == current_year)])
-                    st.metric("📅 This Month", this_month)
+                    st.metric("This Month", this_month)
                 except:
-                    st.metric("📅 This Month", "N/A")
+                    st.metric("This Month", "N/A")
             else:
-                st.metric("📅 This Month", "N/A")
+                st.metric("This Month", "N/A")
             st.markdown("</div>", unsafe_allow_html=True)
 
     
@@ -1344,5 +1344,6 @@ elif st.session_state.page == "main_app":
     render_main_app()
 else:
     render_login_page()
+
 
 
