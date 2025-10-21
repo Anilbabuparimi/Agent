@@ -652,12 +652,41 @@ def parse_vocabulary_sections(vocab_text):
 vocab_text = st.session_state.get("vocab_output", "")
 sections_data = parse_vocabulary_sections(vocab_text)
 
-# Debug: Show what sections were parsed
-if st.session_state.get('show_vocabulary') and sections_data:
-    with st.expander("Debug: Parsed Sections"):
-        st.write("Sections found:", list(sections_data.keys()))
-        for section, items in sections_data.items():
-            st.write(f"{section}: {len(items)} items")
+# Debug: Check what user data is available
+if st.session_state.get('show_vocabulary'):
+    with st.expander("Debug: User Session Data"):
+        st.write("All session state keys:", list(st.session_state.keys()))
+        st.write("Employee ID:", st.session_state.get('employee_id', 'NOT FOUND'))
+        st.write("User ID:", st.session_state.get('user_id', 'NOT FOUND'))
+        st.write("User info keys:", [key for key in st.session_state.keys() if 'user' in key.lower() or 'id' in key.lower() or 'employee' in key.lower()])
+
+# FIXED: Get employee ID from login page
+def get_user_id():
+    # Try employee_id first (from your login page)
+    if 'employee_id' in st.session_state and st.session_state.employee_id:
+        return st.session_state.employee_id
+    
+    # Fallback to other possible keys
+    possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
+    
+    for key in possible_keys:
+        if key in st.session_state and st.session_state[key]:
+            return st.session_state[key]
+    
+    # If no user ID found, check shared header data
+    try:
+        shared_data = get_shared_data()
+        if shared_data and 'user_id' in shared_data:
+            return shared_data['user_id']
+        if shared_data and 'employee_id' in shared_data:
+            return shared_data['employee_id']
+    except:
+        pass
+    
+    return 'Not Available'
+
+# Get the actual user ID
+user_id = get_user_id()
 
 # Show feedback section if not submitted
 if not st.session_state.get('feedback_submitted', False):
@@ -680,102 +709,86 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("feedback_form_positive", clear_on_submit=True):
             st.info("Thank you for your positive feedback!")
             
-            # Auto-extracted user info from login
-            user_id = st.session_state.get('user_id', 'N/A')
-            
-            # Display only User ID
-            st.text_input("User ID", value=user_id, disabled=True, key="user_id_display")
+            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
+            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_display")
             
             submitted = st.form_submit_button("📨 Submit Positive Feedback")
             if submitted:
                 if submit_feedback(fb_choice, user_id=user_id):
                     st.success("✅ Thank you! Your positive feedback has been recorded.")
 
-    # Feedback form 2: Definitions off
+    # Feedback form 2: Definitions off - FIXED TO SHOW ALL SECTIONS
     elif fb_choice == "I have read it, found some definitions to be off.":
         with st.form("feedback_form_defs", clear_on_submit=True):
             st.markdown("**Please select which sections and terms have definitions that seem off:**")
             
-            # Auto-extracted user info from login
-            user_id = st.session_state.get('user_id', 'N/A')
-            
-            # Display only User ID
-            st.text_input("User ID", value=user_id, disabled=True, key="user_id_defs")
+            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
+            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_defs")
 
             selected_issues = {}
             
-            # Create dropdowns for ALL sections dynamically
-            if sections_data:
-                for section_name, items in sections_data.items():
-                    # Clean section name for display
-                    display_section_name = section_name.replace('Section 1: ', '')\
-                                                      .replace('Section 2: ', '')\
-                                                      .replace('Section 3: ', '')\
-                                                      .replace('Section 4: ', '')
-                    
-                    st.markdown(f"**{display_section_name}**")
-                    
-                    # Only Section 4 should show narrative message, others should have dropdowns
-                    if section_name.startswith('Section 4:'):
-                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
-                    elif items:  # For Sections 1, 2, 3 - show dropdowns with options
-                        selected_items = st.multiselect(
-                            f"Select problematic terms in {display_section_name}:",
-                            options=items,
-                            key=f"multiselect_{section_name}",
-                            help=f"Select terms from {display_section_name} that have definition issues"
-                        )
-                        
-                        if selected_items:
-                            selected_issues[section_name] = selected_items
-                    else:
-                        # If section has no items but isn't Section 4
-                        st.info("No specific terms found in this section.")
-            else:
-                # Fallback when no sections are parsed
-                st.warning("No vocabulary sections were parsed. Using default sections.")
+            # Define the expected sections in order
+            expected_sections = [
+                "Section 1: Extract and Define Business Vocabulary Terms",
+                "Section 2: Identify KPIs and Metrics", 
+                "Section 3: Identify Relevant Business Processes",
+                "Section 4: Present a Cohesive Narrative"
+            ]
+            
+            # Create dropdowns for ALL expected sections
+            for section_name in expected_sections:
+                # Get the display name without "Section X: "
+                display_section_name = section_name.replace('Section 1: ', '')\
+                                                  .replace('Section 2: ', '')\
+                                                  .replace('Section 3: ', '')\
+                                                  .replace('Section 4: ', '')
                 
-                # Define fallback sections based on typical structure
-                fallback_sections = {
-                    "Section 1: Extract and Define Business Vocabulary Terms": [
-                        "Managed Pros", "Account Support", "Growth Strategies", 
-                        "Tailored Strategies", "Upselling", "Revenue Growth",
-                        "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
-                    ],
-                    "Section 2: Identify KPIs and Metrics": [
-                        "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
-                        "Upsell Rate", "Customer Satisfaction Score (CSAT)"
-                    ],
-                    "Section 3: Identify Relevant Business Processes": [
-                        "Account Management Process", "Sales Strategy Development", 
-                        "Customer Feedback Loop"
-                    ]
-                }
+                st.markdown(f"**{display_section_name}**")
                 
-                for section_name, options in fallback_sections.items():
-                    display_section_name = section_name.replace('Section 1: ', '')\
-                                                      .replace('Section 2: ', '')\
-                                                      .replace('Section 3: ', '')\
-                                                      .replace('Section 4: ', '')
-                    
-                    st.markdown(f"**{display_section_name}**")
-                    
+                # Get items for this section (either from parsed data or fallback)
+                if section_name in sections_data and sections_data[section_name]:
+                    items = sections_data[section_name]
+                else:
+                    # Fallback items for each section
+                    fallback_items = {
+                        "Section 1: Extract and Define Business Vocabulary Terms": [
+                            "Managed Pros", "Account Support", "Growth Strategies", 
+                            "Tailored Strategies", "Upselling", "Revenue Growth",
+                            "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
+                        ],
+                        "Section 2: Identify KPIs and Metrics": [
+                            "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
+                            "Upsell Rate", "Customer Satisfaction Score (CSAT)"
+                        ],
+                        "Section 3: Identify Relevant Business Processes": [
+                            "Account Management Process", "Sales Strategy Development", 
+                            "Customer Feedback Loop"
+                        ],
+                        "Section 4: Present a Cohesive Narrative": [
+                            "Business Problem Context", "Performance Indicators",
+                            "Upstream Processes", "Interconnectedness Analysis"
+                        ]
+                    }
+                    items = fallback_items.get(section_name, [])
+                
+                # For ALL sections show dropdowns
+                if items:
                     selected_items = st.multiselect(
                         f"Select problematic terms in {display_section_name}:",
-                        options=options,
-                        key=f"fallback_{section_name}",
+                        options=items,
+                        key=f"multiselect_{section_name}",
                         help=f"Select terms from {display_section_name} that have definition issues"
                     )
-                    if selected_items:
-                        selected_issues[section_name] = selected_items
+                else:
+                    st.info("No specific terms found in this section.")
+                    selected_items = []
                 
-                # Add Section 4 separately as just heading
-                st.markdown("**Present a Cohesive Narrative**")
-                st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                if selected_items:
+                    selected_issues[section_name] = selected_items
 
             additional_feedback = st.text_area(
                 "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found, including any feedback on Section 4 narrative content..."
+                placeholder="Please provide more details about the definition issues you found..."
             )
 
             submitted = st.form_submit_button("📨 Submit Feedback")
@@ -798,11 +811,8 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("feedback_form_suggestions", clear_on_submit=True):
             st.markdown("**Please share your suggestions for improvement:**")
             
-            # Auto-extracted user info from login
-            user_id = st.session_state.get('user_id', 'N/A')
-            
-            # Display only User ID
-            st.text_input("User ID", value=user_id, disabled=True, key="user_id_suggestions")
+            # Display User ID - NOW SHOULD SHOW ACTUAL EMPLOYEE ID
+            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_suggestions")
             
             suggestions = st.text_area(
                 "Your suggestions:",
@@ -899,47 +909,6 @@ st.markdown("""
         border-radius: 12px !important;
         font-weight: 500;
     }
-    
-    /* Radio button styling */
-    .stRadio [data-baseweb="radio"] div {
-        color: white !important;
-    }
-    
-    /* Text area styling */
-    .stTextArea [data-baseweb="textarea"] {
-        background-color: #0e1117 !important;
-        color: white !important;
-        border-color: #555555 !important;
-    }
-    
-    .stTextArea [data-baseweb="textarea"]:focus {
-        border-color: #8b1e1e !important;
-        box-shadow: 0 0 0 1px #8b1e1e !important;
-    }
-    
-    /* Section heading styling */
-    .stMarkdown {
-        color: white !important;
-    }
-    
-    /* Make sure all text in forms is visible */
-    .stForm {
-        color: white !important;
-    }
-    
-    /* Info boxes */
-    .stInfo {
-        background-color: #1e1e1e !important;
-        border: 1px solid #555555 !important;
-        color: white !important;
-    }
-    
-    /* Warning boxes */
-    .stWarning {
-        background-color: #2a1e1e !important;
-        border: 1px solid #8b1e1e !important;
-        color: white !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 # ===============================
@@ -993,6 +962,7 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
 
