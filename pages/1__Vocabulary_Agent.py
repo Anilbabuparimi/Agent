@@ -600,226 +600,256 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
         unsafe_allow_html=True
     )
 
-    # ========================
-    # 💬 ENHANCED FEEDBACK FORM (SHOW ONLY AFTER ANALYSIS)
-    # ========================
+     # ========================
+        # 💬 ENHANCED FEEDBACK FORM (SHOW ONLY AFTER ANALYSIS)
+        # ========================
 
-    # Show feedback section if not submitted OR if user wants to submit again
-    show_feedback = not st.session_state.get('feedback_submitted', False)
+        # Show feedback section if not submitted OR if user wants to submit again
+        show_feedback = not st.session_state.get('feedback_submitted', False)
 
-    if show_feedback:
-        st.markdown("---")
-        st.markdown("""
-            <div class="section-title-box" style="text-align:center;">
-                <h3>💬 User Feedback</h3>
-            </div>
-        """, unsafe_allow_html=True)
+        if show_feedback:
+            st.markdown("---")
+            st.markdown("""
+                <div class="section-title-box" style="text-align:center;">
+                    <h3>💬 User Feedback</h3>
+                </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown(
-            "Please share your thoughts or suggestions after reviewing the vocabulary results.")
+            st.markdown(
+                "Please share your thoughts or suggestions after reviewing the vocabulary results.")
 
-        # ✅ INITIALIZE FEEDBACK STATE - NO OPTION SELECTED INITIALLY
-        if 'feedback_option' not in st.session_state:
-            st.session_state.feedback_option = None
+            # ✅ INITIALIZE FEEDBACK STATE - NO OPTION SELECTED INITIALLY
+            if 'feedback_option' not in st.session_state:
+                st.session_state.feedback_option = None
 
-        # Radio buttons for feedback type - NO DEFAULT SELECTION
-        feedback_option = st.radio(
-            "Select your feedback type:",
-            options=[
-                "I have read it, found it useful, thanks.",
-                "I have read it, found some definitions to be off.",
-                "The widget seems interesting, but I have some suggestions on the features."
-            ],
-            key="feedback_radio",
-            index=None  # ✅ NO DEFAULT SELECTION
-        )
+            # Radio buttons for feedback type - NO DEFAULT SELECTION
+            feedback_option = st.radio(
+                "Select your feedback type:",
+                options=[
+                    "I have read it, found it useful, thanks.",
+                    "I have read it, found some definitions to be off.",
+                    "The widget seems interesting, but I have some suggestions on the features."
+                ],
+                key="feedback_radio",
+                index=None  # ✅ NO DEFAULT SELECTION
+            )
 
-        # Update session state when user selects an option
-        if feedback_option != st.session_state.feedback_option:
-            st.session_state.feedback_option = feedback_option
+            # Update session state when user selects an option
+            if feedback_option != st.session_state.feedback_option:
+                st.session_state.feedback_option = feedback_option
 
-        # Form 1: Positive Feedback
-        if feedback_option == "I have read it, found it useful, thanks.":
-            with st.form("feedback_form_1_positive", clear_on_submit=True):
-                st.info("Thank you for your positive feedback!")
+            # Form 1: Positive Feedback (Now collects Name/Email)
+            if feedback_option == "I have read it, found it useful, thanks.":
+                with st.form("feedback_form_1_positive", clear_on_submit=True):
+                    st.info(
+                        "Thank you for your positive feedback! Optional: Share your name and email.")
 
-                # Show Employee ID and account/industry
-                employee_id = st.session_state.get('employee_id', 'Not provided')
-                st.text_input("Employee ID", value=employee_id, disabled=True)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input("Account", value=st.session_state.get(
-                        "analysis_account", ""), disabled=True, key="account_pos")
-                with col2:
-                    st.text_input("Industry", value=st.session_state.get(
-                        "analysis_industry", ""), disabled=True, key="industry_pos")
+                    # Show account and industry from analysis
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.text_input("Account", value=st.session_state.get(
+                            "analysis_account", ""), disabled=True, key="account_pos")
+                    with col2:
+                        st.text_input("Industry", value=st.session_state.get(
+                            "analysis_industry", ""), disabled=True, key="industry_pos")
 
-                submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
+                    name = st.text_input(
+                        "Your Name (optional)", key="name_pos")
+                    email = st.text_input(
+                        "Your Email (optional)", key="email_pos")
 
-                if submitted:
-                    if submit_feedback(feedback_type=feedback_option):
-                        st.success("✅ Thank you! Your positive feedback has been recorded.")
-                        st.session_state.feedback_submitted = True
+                    submitted = st.form_submit_button(
+                        "📨 Submit Positive Feedback")
 
-        # Form 2: Definitions Off
-        elif feedback_option == "I have read it, found some definitions to be off.":
-            with st.form("feedback_form_2", clear_on_submit=True):
-                st.markdown("**Please select which sections have definitions that seem off:**")
+                    if submitted:
+                        if submit_feedback(feedback_type=feedback_option, name=name, email=email):
+                            st.success(
+                                "✅ Thank you! Your positive feedback has been recorded.")
 
-                # Show Employee ID and account/industry
-                employee_id = st.session_state.get('employee_id', 'Not provided')
-                st.text_input("Employee ID", value=employee_id, disabled=True)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input("Account", value=st.session_state.get(
-                        "analysis_account", ""), disabled=True, key="account_def")
-                with col2:
-                    st.text_input("Industry", value=st.session_state.get(
-                        "analysis_industry", ""), disabled=True, key="industry_def")
+            # Form 2: Definitions Off
+            elif feedback_option == "I have read it, found some definitions to be off.":
+                with st.form("feedback_form_2", clear_on_submit=True):
+                    st.markdown(
+                        "**Please select which sections have definitions that seem off:**")
 
-                # Extract vocabulary sections dynamically
-                vocab_text = st.session_state.vocab_output
+                    # Show account and industry from analysis
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.text_input("Account", value=st.session_state.get(
+                            "analysis_account", ""), disabled=True, key="account_def")
+                    with col2:
+                        st.text_input("Industry", value=st.session_state.get(
+                            "analysis_industry", ""), disabled=True, key="industry_def")
 
-                # Parse vocabulary to extract Step headings
-                step_sections = {}
-                if vocab_text:
-                    # Extract Step N: headings with their content
-                    step_pattern = r'(Step\s*(\d+)\s*:\s*([^\n]+))'
-                    matches = re.finditer(step_pattern, vocab_text, re.IGNORECASE)
+                    name = st.text_input("Your Name")
+                    email = st.text_input("Your Email (optional)")
 
-                    for match in matches:
-                        step_num = match.group(2)
-                        step_title = match.group(3).strip()
-                        step_key = f"Step {step_num}"
-                        step_sections[step_key] = step_title
+                    # Extract vocabulary sections dynamically
+                    vocab_text = st.session_state.outputs.get("vocabulary", "")
 
-                # If no steps found or less than 4, create generic options
-                if len(step_sections) == 0:
-                    step_sections = {
-                        "Step 1": "Extract and Define Business Vocabulary Terms",
-                        "Step 2": "Identify KPIs and Metrics",
-                        "Step 3": "Identify Relevant Business Processes", 
-                        "Step 4": "Present a Cohesive Narrative"
-                    }
-
-                # Create 4 multiselect dropdowns for each step (REMOVED STEP 5)
-                st.markdown("### Select problematic sections:")
-
-                selected_issues = {}
-                for i in range(1, 5):  # CHANGED: Only 1-4 now, removed 5
-                    step_key = f"Step {i}"
-                    step_title = step_sections.get(step_key, f"Section {i}")
-
-                    # Extract sub-headings (numbered items under each step)
-                    sub_items = []
+                    # Parse vocabulary to extract Step headings
+                    step_sections = {}
                     if vocab_text:
-                        # Look for numbered items (1. Item, 2. Item, etc.) in the vocabulary
-                        step_section_match = re.search(
-                            rf'Step\s*{i}\s*:.*?(?=Step\s*\d+\s*:|$)',
-                            vocab_text,
-                            re.IGNORECASE | re.DOTALL
+                        # Extract Step N: headings with their content
+                        step_pattern = r'(Step\s*(\d+)\s*:\s*([^\n]+))'
+                        matches = re.finditer(
+                            step_pattern, vocab_text, re.IGNORECASE)
+
+                        for match in matches:
+                            step_num = match.group(2)
+                            step_title = match.group(3).strip()
+                            step_key = f"Step {step_num}"
+                            step_sections[step_key] = step_title
+
+                    # If no steps found or less than 5, create generic options
+                    if len(step_sections) == 0:
+                        step_sections = {
+                            "Step 1": "Key Performance Indicators (KPIs)",
+                            "Step 2": "Technical Definitions",
+                            "Step 3": "Industry Context",
+                            "Step 4": "Business Metrics",
+                            "Step 5": "Strategic Implications"
+                        }
+
+                    # Create 5 multiselect dropdowns for each step
+                    st.markdown("### Select problematic sections:")
+
+                    selected_issues = {}
+                    for i in range(1, 6):
+                        step_key = f"Step {i}"
+                        step_title = step_sections.get(
+                            step_key, f"Section {i}")
+
+                        # Extract sub-headings (numbered items under each step)
+                        sub_items = []
+                        if vocab_text:
+                            # Look for numbered items (1. Item, 2. Item, etc.) in the vocabulary
+                            # This will find items like "1. Revenue Growth Rate:", "2. Market Share:", etc.
+                            step_section_match = re.search(
+                                rf'Step\s*{i}\s*:.*?(?=Step\s*\d+\s*:|$)',
+                                vocab_text,
+                                re.IGNORECASE | re.DOTALL
+                            )
+
+                            if step_section_match:
+                                step_content = step_section_match.group(0)
+                                # Extract numbered sub-items
+                                sub_item_pattern = r'^\s*(\d+)\.\s+([^:\n]+)'
+                                sub_matches = re.finditer(
+                                    sub_item_pattern, step_content, re.MULTILINE)
+
+                                for sub_match in sub_matches:
+                                    item_text = sub_match.group(2).strip()
+                                    # Clean up any extra formatting
+                                    # Remove HTML tags
+                                    item_text = re.sub(
+                                        r'<[^>]+>', '', item_text)
+                                    # Remove bold markers
+                                    item_text = re.sub(
+                                        r'\*\*([^*]+)\*\*', r'\1', item_text)
+                                    sub_items.append(item_text)
+
+                        # If no sub-items found, add just the step heading as an option
+                        if not sub_items:
+                            sub_items = [f"{step_title} - General"]
+
+                        # Special handling for Step 5 (usually a paragraph)
+                        if i == 5 and not sub_items:
+                            sub_items = [f"{step_key}: {step_title}"]
+
+                        # Create multiselect for this step
+                        selected = st.multiselect(
+                            f"**{step_key}: {step_title}**",
+                            options=sub_items,
+                            key=f"step_{i}_issues",
+                            help=f"Select items from {step_key} that have definition issues"
                         )
 
-                        if step_section_match:
-                            step_content = step_section_match.group(0)
-                            # Extract numbered sub-items
-                            sub_item_pattern = r'^\s*(\d+)\.\s+([^:\n]+)'
-                            sub_matches = re.finditer(
-                                sub_item_pattern, step_content, re.MULTILINE)
+                        if selected:
+                            selected_issues[step_key] = selected
 
-                            for sub_match in sub_matches:
-                                item_text = sub_match.group(2).strip()
-                                # Clean up any extra formatting
-                                item_text = re.sub(r'<[^>]+>', '', item_text)  # Remove HTML tags
-                                item_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', item_text)  # Remove bold markers
-                                sub_items.append(item_text)
-
-                    # If no sub-items found, add just the step heading as an option
-                    if not sub_items:
-                        sub_items = [f"{step_title} - General"]
-
-                    # Create multiselect for this step
-                    selected = st.multiselect(
-                        f"**{step_key}: {step_title}**",
-                        options=sub_items,
-                        key=f"step_{i}_issues",
-                        help=f"Select items from {step_key} that have definition issues"
+                    additional_feedback = st.text_area(
+                        "Additional comments:",
+                        placeholder="Please provide more details about the definition issues you found..."
                     )
 
-                    if selected:
-                        selected_issues[step_key] = selected
+                    submitted = st.form_submit_button("📨 Submit Feedback")
 
-                additional_feedback = st.text_area(
-                    "Additional comments:",
-                    placeholder="Please provide more details about the definition issues you found..."
-                )
+                    if submitted:
+                        if not selected_issues:
+                            st.warning(
+                                "⚠️ Please select at least one section/item that has definition issues.")
+                        else:
+                            # Format the selected issues for CSV storage
+                            issues_list = []
+                            for step, items in selected_issues.items():
+                                for item in items:
+                                    issues_list.append(f"{step} - {item}")
 
-                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                            off_defs_text = " | ".join(issues_list)
 
-                if submitted:
-                    if not selected_issues:
-                        st.warning("⚠️ Please select at least one section/item that has definition issues.")
-                    else:
-                        # Format the selected issues for CSV storage
-                        issues_list = []
-                        for step, items in selected_issues.items():
-                            for item in items:
-                                issues_list.append(f"{step} - {item}")
+                            if submit_feedback(
+                                feedback_type=feedback_option,
+                                name=name,
+                                email=email,
+                                off_definitions=off_defs_text,
+                                additional_feedback=additional_feedback
+                            ):
+                                st.success(
+                                    "✅ Thank you! Your feedback has been submitted.")
 
-                        off_defs_text = " | ".join(issues_list)
+            # Form 3: Suggestions
+            elif feedback_option == "The widget seems interesting, but I have some suggestions on the features.":
+                with st.form("feedback_form_3", clear_on_submit=True):
+                    st.markdown(
+                        "**Please share your suggestions for improvement:**")
 
-                        if submit_feedback(
-                            feedback_type=feedback_option,
-                            off_definitions=off_defs_text,
-                            additional_feedback=additional_feedback
-                        ):
-                            st.success("✅ Thank you! Your feedback has been submitted.")
-                            st.session_state.feedback_submitted = True
+                    # Show account and industry from analysis
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.text_input("Account", value=st.session_state.get(
+                            "analysis_account", ""), disabled=True, key="account_sug")
+                    with col2:
+                        st.text_input("Industry", value=st.session_state.get(
+                            "analysis_industry", ""), disabled=True, key="industry_sug")
 
-        # Form 3: Suggestions
-        elif feedback_option == "The widget seems interesting, but I have some suggestions on the features.":
-            with st.form("feedback_form_3", clear_on_submit=True):
-                st.markdown("**Please share your suggestions for improvement:**")
+                    name = st.text_input("Your Name")
+                    email = st.text_input("Your Email (optional)")
 
-                # Show Employee ID and account/industry
-                employee_id = st.session_state.get('employee_id', 'Not provided')
-                st.text_input("Employee ID", value=employee_id, disabled=True)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input("Account", value=st.session_state.get(
-                        "analysis_account", ""), disabled=True, key="account_sug")
-                with col2:
-                    st.text_input("Industry", value=st.session_state.get(
-                        "analysis_industry", ""), disabled=True, key="industry_sug")
+                    suggestions = st.text_area(
+                        "Your suggestions:",
+                        placeholder="What features would you like to see improved or added?",
+                        key="suggestions_textarea"
+                    )
 
-                suggestions = st.text_area(
-                    "Your suggestions:",
-                    placeholder="What features would you like to see improved or added?",
-                    key="suggestions_textarea"
-                )
+                    submitted = st.form_submit_button("📨 Submit Feedback")
 
-                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                    if submitted:
+                        if not suggestions.strip():
+                            st.warning("⚠️ Please provide your suggestions.")
+                        else:
+                            if submit_feedback(
+                                feedback_type=feedback_option,
+                                name=name,
+                                email=email,
+                                suggestions=suggestions
+                            ):
+                                st.success(
+                                    "✅ Thank you! Your feedback has been submitted.")
+                                # Hide feedback form after submission
+                                st.rerun()
 
-                if submitted:
-                    if not suggestions.strip():
-                        st.warning("⚠️ Please provide your suggestions.")
-                    else:
-                        if submit_feedback(feedback_type=feedback_option, suggestions=suggestions):
-                            st.success("✅ Thank you! Your feedback has been submitted.")
-                            st.session_state.feedback_submitted = True
+        else:
+            # Feedback already submitted - show thank you message and option to submit again
+            st.markdown("---")
+            st.success("✅ Thank you! Your feedback has been recorded.")
+            st.info(
+                "💡 If you'd like to provide additional feedback after reviewing the vocabulary again, click below.")
 
-    else:
-        # Feedback already submitted - show thank you message and option to submit again
-        st.markdown("---")
-        st.success("✅ Thank you! Your feedback has been recorded.")
-        st.info("💡 If you'd like to provide additional feedback after reviewing the vocabulary again, click below.")
+            if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn"):
+                st.session_state.feedback_submitted = False
+                st.rerun()
 
-        if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn", type="primary"):
-            st.session_state.feedback_submitted = False
-            st.rerun()
 # ===============================
 # Download Section - Only show if feedback submitted
 # ===============================
@@ -872,6 +902,7 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
 
 
 
