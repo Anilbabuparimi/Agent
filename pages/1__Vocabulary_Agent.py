@@ -611,6 +611,7 @@ st.markdown(
 def parse_vocabulary_sections(vocab_text):
     sections = {}
     current_section = None
+    current_items = []
     
     if not vocab_text:
         return sections
@@ -623,10 +624,15 @@ def parse_vocabulary_sections(vocab_text):
         # Detect section headers (Section X: Title)
         section_match = re.match(r'^Section\s+(\d+):\s*(.+)$', line)
         if section_match:
+            # Save previous section if exists
+            if current_section and current_items:
+                sections[current_section] = current_items.copy()
+            
+            # Start new section
             section_num = section_match.group(1)
             section_title = section_match.group(2).strip()
             current_section = f"Section {section_num}: {section_title}"
-            sections[current_section] = []
+            current_items = []
             continue
         
         # Detect numbered items within sections (1. Term: Definition)
@@ -634,13 +640,24 @@ def parse_vocabulary_sections(vocab_text):
             item_match = re.match(r'^(\d+)\.\s+(.+?):\s*(.+)$', line)
             if item_match:
                 item_term = item_match.group(2).strip()
-                sections[current_section].append(item_term)
+                current_items.append(item_term)
+    
+    # Don't forget to add the last section
+    if current_section and current_items:
+        sections[current_section] = current_items.copy()
     
     return sections
 
 # Get vocabulary text from session state
 vocab_text = st.session_state.get("vocab_output", "")
 sections_data = parse_vocabulary_sections(vocab_text)
+
+# Debug: Show what sections were parsed
+if st.session_state.get('show_vocabulary') and sections_data:
+    with st.expander("Debug: Parsed Sections"):
+        st.write("Sections found:", list(sections_data.keys()))
+        for section, items in sections_data.items():
+            st.write(f"{section}: {len(items)} items")
 
 # Show feedback section if not submitted
 if not st.session_state.get('feedback_submitted', False):
@@ -687,7 +704,7 @@ if not st.session_state.get('feedback_submitted', False):
 
             selected_issues = {}
             
-            # Create dropdowns for ALL sections
+            # Create dropdowns for ALL sections dynamically
             if sections_data:
                 for section_name, items in sections_data.items():
                     # Clean section name for display
@@ -698,7 +715,10 @@ if not st.session_state.get('feedback_submitted', False):
                     
                     st.markdown(f"**{display_section_name}**")
                     
-                    if items:  # If section has items, show dropdown
+                    # Only Section 4 should show narrative message, others should have dropdowns
+                    if section_name.startswith('Section 4:'):
+                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                    elif items:  # For Sections 1, 2, 3 - show dropdowns with options
                         selected_items = st.multiselect(
                             f"Select problematic terms in {display_section_name}:",
                             options=items,
@@ -709,46 +729,53 @@ if not st.session_state.get('feedback_submitted', False):
                         if selected_items:
                             selected_issues[section_name] = selected_items
                     else:
-                        # For sections without specific items (like Section 4)
-                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                        # If section has no items but isn't Section 4
+                        st.info("No specific terms found in this section.")
             else:
-                # Fallback sections when no data is parsed
+                # Fallback when no sections are parsed
+                st.warning("No vocabulary sections were parsed. Using default sections.")
+                
+                # Define fallback sections based on typical structure
                 fallback_sections = {
-                    "Extract and Define Business Vocabulary Terms": [
+                    "Section 1: Extract and Define Business Vocabulary Terms": [
                         "Managed Pros", "Account Support", "Growth Strategies", 
                         "Tailored Strategies", "Upselling", "Revenue Growth",
                         "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
                     ],
-                    "Identify KPIs and Metrics": [
+                    "Section 2: Identify KPIs and Metrics": [
                         "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
                         "Upsell Rate", "Customer Satisfaction Score (CSAT)"
                     ],
-                    "Identify Relevant Business Processes": [
+                    "Section 3: Identify Relevant Business Processes": [
                         "Account Management Process", "Sales Strategy Development", 
                         "Customer Feedback Loop"
-                    ],
-                    "Present a Cohesive Narrative": []
+                    ]
                 }
                 
                 for section_name, options in fallback_sections.items():
-                    st.markdown(f"**{section_name}**")
+                    display_section_name = section_name.replace('Section 1: ', '')\
+                                                      .replace('Section 2: ', '')\
+                                                      .replace('Section 3: ', '')\
+                                                      .replace('Section 4: ', '')
                     
-                    if options:  # Show dropdown for sections with options
-                        selected_items = st.multiselect(
-                            f"Select problematic terms in {section_name}:",
-                            options=options,
-                            key=f"fallback_{section_name}",
-                            help=f"Select terms from {section_name} that have definition issues"
-                        )
-                        if selected_items:
-                            selected_issues[section_name] = selected_items
-                    else:
-                        # For Section 4 - no dropdown, just info
-                        st.info("This section contains narrative content. Please provide general feedback in the comments below.")
+                    st.markdown(f"**{display_section_name}**")
+                    
+                    selected_items = st.multiselect(
+                        f"Select problematic terms in {display_section_name}:",
+                        options=options,
+                        key=f"fallback_{section_name}",
+                        help=f"Select terms from {display_section_name} that have definition issues"
+                    )
+                    if selected_items:
+                        selected_issues[section_name] = selected_items
+                
+                # Add Section 4 separately as just heading
+                st.markdown("**Present a Cohesive Narrative**")
+                st.info("This section contains narrative content. Please provide general feedback in the comments below.")
 
             additional_feedback = st.text_area(
                 "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found..."
+                placeholder="Please provide more details about the definition issues you found, including any feedback on Section 4 narrative content..."
             )
 
             submitted = st.form_submit_button("📨 Submit Feedback")
@@ -809,7 +836,7 @@ st.markdown("""
     /* MULTISELECT DROPDOWN FIXES - MAKE THEM VISIBLE */
     .stMultiSelect [data-baseweb="select"] {
         background-color: #0e1117 !important;
-        border-color: #555555 !important;
+        border: 1px solid #555555 !important;
         color: white !important;
     }
     
@@ -819,7 +846,7 @@ st.markdown("""
     }
     
     /* Dropdown placeholder */
-    .stMultiSelect [data-baseweb="select"]::placeholder {
+    .stMultiSelect [data-baseweb="select"] input::placeholder {
         color: #cccccc !important;
     }
     
@@ -891,14 +918,6 @@ st.markdown("""
     }
     
     /* Section heading styling */
-    .stMarkdown h3 {
-        color: #ffffff !important;
-        border-bottom: 1px solid #444444;
-        padding-bottom: 8px;
-        margin-top: 20px !important;
-    }
-    
-    /* Regular text styling */
     .stMarkdown {
         color: white !important;
     }
@@ -912,6 +931,13 @@ st.markdown("""
     .stInfo {
         background-color: #1e1e1e !important;
         border: 1px solid #555555 !important;
+        color: white !important;
+    }
+    
+    /* Warning boxes */
+    .stWarning {
+        background-color: #2a1e1e !important;
+        border: 1px solid #8b1e1e !important;
         color: white !important;
     }
 </style>
@@ -967,6 +993,7 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
 
