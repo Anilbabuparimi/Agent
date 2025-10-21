@@ -534,24 +534,214 @@ if not st.session_state.current_system_extracted:
 # 📊 DISPLAY RESULTS
 # =========================================
 if st.session_state.current_system_extracted:
-    st.markdown('<div class="section-title-box"><h3>📊 Current System Analysis</h3></div>', unsafe_allow_html=True)
+    # Updated header to match Vocabulary style
+    st.markdown(
+        f"""
+        <div style="margin: 20px 0;">
+            <div class="section-title-box" style="padding: 1rem 1.5rem;">
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                    <h3 style="margin-bottom:8px; color:white; font-weight:800; font-size:1.4rem; line-height:1.2;">
+                        Current System Analysis
+                    </h3>
+                    <p style="font-size:0.95rem; color:white; margin:0; line-height:1.5; text-align:center; max-width: 800px;">
+                        Please note that this is an <strong>AI-generated Current System Analysis</strong>, derived from 
+                        the problem statement you shared.<br>
+                        In case you find something off, there's a provision to share feedback at the bottom 
+                        we encourage you to use it.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
     sections = parse_current_system_sections(st.session_state.current_system_data)
 
-    # Display Core Business Problem
-    st.markdown(format_section_box(sections["core_problem"], "Core Business Problem", "🎯"), unsafe_allow_html=True)
+    # Display Core Business Problem with red border
+    st.markdown(
+        f"""
+        <div style="
+            background: var(--bg-card);
+            border: 2px solid #8b1e1e;
+            border-radius: 16px;
+            padding: 1.6rem;
+            margin-bottom: 1.6rem;
+            box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+        ">
+            <h4 style="
+                color: #8b1e1e;
+                font-weight: 700;
+                font-size: 1.15rem;
+                margin: 0 0 1rem 0;
+                border-bottom: 2px solid #8b1e1e;
+                padding-bottom: 0.5rem;
+                text-align: left;
+            ">
+                🎯 Core Business Problem
+            </h4>
+            <div style="
+                color: var(--text-primary);
+                line-height: 1.45;
+                font-size: 1rem;
+                text-align: left;
+                white-space: normal;
+            ">
+                {sections["core_problem"]}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    # Display Current System
-    st.markdown(format_section_box(sections["current_system"], "Current System", "🔧"), unsafe_allow_html=True)
+    # Display Current System with red border
+    st.markdown(
+        f"""
+        <div style="
+            background: var(--bg-card);
+            border: 2px solid #8b1e1e;
+            border-radius: 16px;
+            padding: 1.6rem;
+            margin-bottom: 1.6rem;
+            box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+        ">
+            <h4 style="
+                color: #8b1e1e;
+                font-weight: 700;
+                font-size: 1.15rem;
+                margin: 0 0 1rem 0;
+                border-bottom: 2px solid #8b1e1e;
+                padding-bottom: 0.5rem;
+                text-align: left;
+            ">
+                🔧 Current System
+            </h4>
+            <div style="
+                color: var(--text-primary);
+                line-height: 1.45;
+                font-size: 1rem;
+                text-align: left;
+                white-space: normal;
+            ">
+                {sections["current_system"]}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
-    # Display Inputs and Outputs side by side
-    st.markdown(format_side_by_side_section(
-        sections["inputs"], "Inputs", "📥",
-        sections["outputs"], "Outputs", "📤"
-    ), unsafe_allow_html=True)
+    # Display Inputs and Outputs side by side with red borders
+    col1, col2 = st.columns(2)
     
-    # Display Pain Points
-    st.markdown(format_section_box(sections["pain_points"], "Pain Points", "⚠️"), unsafe_allow_html=True)
-
+    with col1:
+        st.markdown(
+            f"""
+            <div style="
+                background: var(--bg-card);
+                border: 2px solid #8b1e1e;
+                border-radius: 16px;
+                padding: 1.6rem;
+                margin-bottom: 1.6rem;
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+                height: 100%;
+            ">
+                <h4 style="
+                    color: #8b1e1e;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    margin: 0 0 1rem 0;
+                    border-bottom: 2px solid #8b1e1e;
+                    padding-bottom: 0.5rem;
+                    text-align: left;
+                ">
+                    📥 Inputs
+                </h4>
+                <div style="
+                    color: var(--text-primary);
+                    line-height: 1.45;
+                    font-size: 1rem;
+                    text-align: left;
+                    white-space: normal;
+                ">
+                    {sections["inputs"]}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    with col2:
+        st.markdown(
+            f"""
+            <div style="
+                background: var(--bg-card);
+                border: 2px solid #8b1e1e;
+                border-radius: 16px;
+                padding: 1.6rem;
+                margin-bottom: 1.6rem;
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+                height: 100%;
+            ">
+                <h4 style="
+                    color: #8b1e1e;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    margin: 0 0 1rem 0;
+                    border-bottom: 2px solid #8b1e1e;
+                    padding-bottom: 0.5rem;
+                    text-align: left;
+                ">
+                    📤 Outputs
+                </h4>
+                <div style="
+                    color: var(--text-primary);
+                    line-height: 1.45;
+                    font-size: 1rem;
+                    text-align: left;
+                    white-space: normal;
+                ">
+                    {sections["outputs"]}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    # Display Pain Points with red border
+    st.markdown(
+        f"""
+        <div style="
+            background: var(--bg-card);
+            border: 2px solid #8b1e1e;
+            border-radius: 16px;
+            padding: 1.6rem;
+            margin-bottom: 1.6rem;
+            box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+        ">
+            <h4 style="
+                color: #8b1e1e;
+                font-weight: 700;
+                font-size: 1.15rem;
+                margin: 0 0 1rem 0;
+                border-bottom: 2px solid #8b1e1e;
+                padding-bottom: 0.5rem;
+                text-align: left;
+            ">
+                ⚠️ Pain Points
+            </h4>
+            <div style="
+                color: var(--text-primary);
+                line-height: 1.45;
+                font-size: 1rem;
+                text-align: left;
+                white-space: normal;
+            ">
+                {sections["pain_points"]}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 # ===============================
 # User Feedback Section (Only show after extraction)
 # ===============================
@@ -784,4 +974,5 @@ Generated by Current System Analysis Tool
 # =========================================
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
+
     st.switch_page("Welcome_Agent.py")
