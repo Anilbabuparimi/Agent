@@ -548,7 +548,7 @@ if st.session_state.get("show_ambiguity") and st.session_state.get("ambiguity_ou
     display_account = globals().get("display_account") or st.session_state.get("saved_account", "Unknown Company")
     display_industry = globals().get("display_industry") or st.session_state.get("saved_industry", "Unknown Industry")
 
-    # Section header
+    # Section header - Updated to match Vocabulary style
     st.markdown(
         f"""
         <div style="margin: 20px 0;">
@@ -558,9 +558,12 @@ if st.session_state.get("show_ambiguity") and st.session_state.get("ambiguity_ou
                         Ambiguity Analysis
                     </h3>
                     <p style="font-size:0.95rem; color:white; margin:0; line-height:1.5; text-align:center; max-width: 800px;">
-                        This is an <strong>AI-generated Ambiguity Analysis</strong> for 
-                        <strong>{display_account}</strong> in the <strong>{display_industry}</strong> industry, 
-                        based on your problem statement.
+                        Please note that it is an <strong>AI-generated Ambiguity Analysis</strong>, derived from 
+                        the <em>company</em> <strong>{display_account}</strong> and 
+                        the <em>industry</em> <strong>{display_industry}</strong> based on the 
+                        <em>problem statement</em> you shared.<br>
+                        In case you find something off, there's a provision to share feedback at the bottom 
+                        we encourage you to use it.
                     </p>
                 </div>
             </div>
@@ -614,23 +617,23 @@ if st.session_state.get("show_ambiguity") and st.session_state.get("ambiguity_ou
         # Convert newlines to <br>
         html_body = formatted_output.replace('\n', '<br>')
 
-        # Render clean formatted HTML block
+        # Content box with red border styling like Vocabulary
         st.markdown(
             f"""
             <div style="
                 background: var(--bg-card);
-                border: 2px solid rgba(139,30,30,0.15);
+                border: 2px solid #8b1e1e;
                 border-radius: 16px;
                 padding: 1.6rem;
                 margin-bottom: 1.6rem;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
             ">
                 <h4 style="
-                    color: var(--musigma-red);
+                    color: #8b1e1e;
                     font-weight: 700;
                     font-size: 1.15rem;
                     margin: 0 0 1rem 0;
-                    border-bottom: 1px solid rgba(139,30,30,0.15);
+                    border-bottom: 2px solid #8b1e1e;
                     padding-bottom: 0.5rem;
                     text-align: left;
                 ">
@@ -649,7 +652,6 @@ if st.session_state.get("show_ambiguity") and st.session_state.get("ambiguity_ou
             """,
             unsafe_allow_html=True
         )
-
 
 
     # ===============================
@@ -833,3 +835,4 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
