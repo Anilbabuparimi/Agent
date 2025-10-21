@@ -558,7 +558,26 @@ if st.session_state.current_system_extracted:
     
     sections = parse_current_system_sections(st.session_state.current_system_data)
 
+    # Clean and format each section to remove numbers and extra whitespace
+    def clean_section_content(content):
+        """Remove numbered lists (1., 2., 3., etc.) and clean up formatting"""
+        if not content:
+            return content
+        
+        # Remove numbered lists (1., 2., 3., etc.)
+        cleaned = re.sub(r'^\s*\d+\.\s*', '', content, flags=re.MULTILINE)
+        
+        # Remove any remaining "Box X:" patterns
+        cleaned = re.sub(r'(?i)\b(box\s*\d+[:.]?\s*)', '', cleaned)
+        
+        # Remove extra whitespace and normalize line breaks
+        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+        cleaned = re.sub(r' {2,}', ' ', cleaned)
+        
+        return cleaned.strip()
+
     # Display Core Business Problem with red border
+    core_problem_clean = clean_section_content(sections["core_problem"])
     st.markdown(
         f"""
         <div style="
@@ -578,7 +597,7 @@ if st.session_state.current_system_extracted:
                 padding-bottom: 0.5rem;
                 text-align: left;
             ">
-                🎯 Core Business Problem
+                Core Business Problem
             </h4>
             <div style="
                 color: var(--text-primary);
@@ -587,7 +606,7 @@ if st.session_state.current_system_extracted:
                 text-align: left;
                 white-space: normal;
             ">
-                {sections["core_problem"]}
+                {core_problem_clean}
             </div>
         </div>
         """,
@@ -595,6 +614,7 @@ if st.session_state.current_system_extracted:
     )
     
     # Display Current System with red border
+    current_system_clean = clean_section_content(sections["current_system"])
     st.markdown(
         f"""
         <div style="
@@ -614,7 +634,7 @@ if st.session_state.current_system_extracted:
                 padding-bottom: 0.5rem;
                 text-align: left;
             ">
-                🔧 Current System
+                Current System
             </h4>
             <div style="
                 color: var(--text-primary);
@@ -623,7 +643,7 @@ if st.session_state.current_system_extracted:
                 text-align: left;
                 white-space: normal;
             ">
-                {sections["current_system"]}
+                {current_system_clean}
             </div>
         </div>
         """,
@@ -634,6 +654,7 @@ if st.session_state.current_system_extracted:
     col1, col2 = st.columns(2)
     
     with col1:
+        inputs_clean = clean_section_content(sections["inputs"])
         st.markdown(
             f"""
             <div style="
@@ -654,7 +675,7 @@ if st.session_state.current_system_extracted:
                     padding-bottom: 0.5rem;
                     text-align: left;
                 ">
-                    📥 Inputs
+                    Inputs
                 </h4>
                 <div style="
                     color: var(--text-primary);
@@ -663,7 +684,7 @@ if st.session_state.current_system_extracted:
                     text-align: left;
                     white-space: normal;
                 ">
-                    {sections["inputs"]}
+                    {inputs_clean}
                 </div>
             </div>
             """,
@@ -671,6 +692,7 @@ if st.session_state.current_system_extracted:
         )
     
     with col2:
+        outputs_clean = clean_section_content(sections["outputs"])
         st.markdown(
             f"""
             <div style="
@@ -691,7 +713,7 @@ if st.session_state.current_system_extracted:
                     padding-bottom: 0.5rem;
                     text-align: left;
                 ">
-                    📤 Outputs
+                    Outputs
                 </h4>
                 <div style="
                     color: var(--text-primary);
@@ -700,7 +722,7 @@ if st.session_state.current_system_extracted:
                     text-align: left;
                     white-space: normal;
                 ">
-                    {sections["outputs"]}
+                    {outputs_clean}
                 </div>
             </div>
             """,
@@ -708,6 +730,7 @@ if st.session_state.current_system_extracted:
         )
     
     # Display Pain Points with red border
+    pain_points_clean = clean_section_content(sections["pain_points"])
     st.markdown(
         f"""
         <div style="
@@ -727,7 +750,7 @@ if st.session_state.current_system_extracted:
                 padding-bottom: 0.5rem;
                 text-align: left;
             ">
-                ⚠️ Pain Points
+                Pain Points
             </h4>
             <div style="
                 color: var(--text-primary);
@@ -736,7 +759,7 @@ if st.session_state.current_system_extracted:
                 text-align: left;
                 white-space: normal;
             ">
-                {sections["pain_points"]}
+                {pain_points_clean}
             </div>
         </div>
         """,
@@ -976,3 +999,4 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
