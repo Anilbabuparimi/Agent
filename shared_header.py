@@ -1002,7 +1002,7 @@ def get_shared_data():
         'problem': st.session_state.get('business_problem', data['problem'])
     }
 
-def render_unified_business_inputs_fixed(page_key_prefix: str = "global", show_titles: bool = True,
+def render_unified_business_inputs(page_key_prefix: str = "global", show_titles: bool = True,
                                        title_account_industry: str = "Account & Industry",
                                        title_problem: str = "Business Problem Description",
                                        save_button_label: str = "✅ Save Problem Details"):
@@ -1334,6 +1334,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
