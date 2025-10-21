@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="Business Problem Analysis Platform",
+    page_title="Business Problem Discovery Assistant",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -108,7 +108,7 @@ def render_login_page():
     """Fixed login page with proper vertical stacking"""
     
     render_header(
-        agent_name="Business Problem Analysis Platform",
+        agent_name="Business Problem Discovery Assistant",
         agent_subtitle="AI-powered agents for strategic business insights",
         enable_admin_access=True,
         header_height=100
@@ -811,7 +811,7 @@ def render_main_app():
     """, unsafe_allow_html=True)
 
     render_header(
-        agent_name="Business Problem Analysis Platform",
+        agent_name="Business Problem Discovery Assistant",
         agent_subtitle="",
         enable_admin_access=True,
         header_height=85
@@ -1344,4 +1344,5 @@ elif st.session_state.page == "main_app":
     render_main_app()
 else:
     render_login_page()
+
 
