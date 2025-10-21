@@ -1032,10 +1032,6 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
     if 'selectbox_key_counter' not in st.session_state:
         st.session_state.selectbox_key_counter = 0
 
-    # 🔥 ADD: Track if problem has been changed
-    if 'problem_changed' not in st.session_state:
-        st.session_state.problem_changed = False
-
     # Enhanced input styles with better visibility
     st.markdown("""
     <style>
@@ -1129,7 +1125,6 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                     st.session_state.business_industry = mapped_industry
                 st.session_state.selectbox_key_counter += 1
                 st.session_state[f'{page_key_prefix}_show_save_btn'] = True
-                st.session_state.problem_changed = True  # 🔥 Mark as changed
                 _safe_rerun()
         with colD:
             if st.button("No", key=f"{page_key_prefix}_cancel_edit", type="secondary"):
@@ -1151,61 +1146,21 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         label_visibility="collapsed",
         key=f"{page_key_prefix}_problem_textarea"
     )
-
-    # 🔥 DETECT PROBLEM CHANGES AND SHOW CONFIRMATION
     if problem_input != st.session_state.business_problem:
         st.session_state.business_problem = problem_input
-        
-        # Only show confirmation if there was previously a saved problem
-        if st.session_state.saved_problem and st.session_state.saved_problem.strip():
-            st.session_state.problem_changed = True
-            st.session_state[f'{page_key_prefix}_show_save_btn'] = True
-            
-            # Show confirmation message
-            st.markdown("""
-                <style>
-                .problem-change-confirmation { 
-                    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15)); 
-                    border: 2px solid rgba(255,165,0,0.4); 
-                    border-radius: 10px; 
-                    padding: 16px 20px; 
-                    box-shadow: 0 4px 12px rgba(255,165,0,0.2); 
-                    margin: 15px 0; 
-                }
-                .problem-change-message { 
-                    color: #8b5a00; 
-                    font-size: 15px; 
-                    font-weight: 600; 
-                    margin-bottom: 0; 
-                    text-align: center; 
-                    text-shadow: none !important; 
-                }
-                </style>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("""
-                <div class="problem-change-confirmation">
-                    <div class="problem-change-message">
-                        ✏️ <strong>Problem statement updated</strong><br>
-                        <span style="font-size: 13px; font-weight: 500; color: #666;">
-                            Click "Save Problem Details" to confirm your changes.
-                        </span>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
 
-    # 🔥 SIMPLIFIED BUTTON LOGIC: Only show buttons when problem is changed
-    has_unsaved_changes = (
-        st.session_state.business_account != st.session_state.saved_account or
-        st.session_state.business_industry != st.session_state.saved_industry or
-        st.session_state.business_problem != st.session_state.saved_problem
-    )
-
-    # Show buttons only when there are unsaved changes
-    if has_unsaved_changes:
-        col1, col2 = st.columns([1, 1])
+    # 🔥 SIMPLE BUTTON LOGIC: ALWAYS SHOW BOTH BUTTONS LIKE WELCOME PAGE
+    col1, col2 = st.columns([1, 1])
+    
+    # Save button - always show when there are unsaved changes
+    with col1:
+        has_unsaved_changes = (
+            st.session_state.business_account != st.session_state.saved_account or
+            st.session_state.business_industry != st.session_state.saved_industry or
+            st.session_state.business_problem != st.session_state.saved_problem
+        )
         
-        with col1:
+        if has_unsaved_changes:
             if st.button(save_button_label, use_container_width=True, type="primary", key=f"{page_key_prefix}_save_btn"):
                 if (st.session_state.business_account == "Select Account" or
                     st.session_state.business_industry == "Select Industry" or
@@ -1216,35 +1171,27 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
                     st.session_state.saved_industry = st.session_state.business_industry
                     st.session_state.saved_problem = st.session_state.business_problem
                     st.session_state.edit_confirmed = False
-                    st.session_state.problem_changed = False  # 🔥 Reset changed flag
                     st.success("✅ Problem details saved!")
                     _safe_rerun()
-        
-        with col2:
-            if st.button("📋 Extract & Copy", use_container_width=True, key=f"{page_key_prefix}_extract_btn"):
-                problem_text = st.session_state.business_problem
-                if problem_text:
-                    st.session_state.extracted_text = problem_text
-                    st.success("Problem statement copied to clipboard!")
-                else:
-                    st.warning("No problem statement to extract")
-
-    # Show Edit button only when there's saved content but no current changes
-    elif st.session_state.saved_problem and st.session_state.saved_problem.strip() and not has_unsaved_changes:
-        if st.button("✏️ Edit Problem", use_container_width=True, key=f"{page_key_prefix}_edit_btn"):
-            # Set the current values to match saved values for editing
-            st.session_state.business_account = st.session_state.saved_account
-            st.session_state.business_industry = st.session_state.saved_industry
-            st.session_state.business_problem = st.session_state.saved_problem
-            st.session_state.problem_changed = True  # 🔥 Mark as changed to show buttons
-            _safe_rerun()
+        else:
+            # Show disabled save button when no changes
+            st.button(save_button_label, use_container_width=True, disabled=True, key=f"{page_key_prefix}_save_btn_disabled")
+    
+    # Extract button - ALWAYS SHOW (never disappears after extraction)
+    with col2:
+        if st.button("📋 Extract & Copy", use_container_width=True, key=f"{page_key_prefix}_extract_btn"):
+            problem_text = st.session_state.business_problem
+            if problem_text and problem_text.strip():
+                st.session_state.extracted_text = problem_text
+                st.success("✅ Problem statement copied to clipboard!")
+            else:
+                st.warning("⚠️ No problem statement to extract")
 
     return (
         st.session_state.business_account,
         st.session_state.business_industry,
         st.session_state.business_problem,
     )
-
 
 def render_admin_panel(admin_password="admin123"):
     """
@@ -1427,6 +1374,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
