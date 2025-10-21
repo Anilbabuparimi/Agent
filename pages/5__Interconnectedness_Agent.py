@@ -548,7 +548,7 @@ if st.session_state.get("show_interconnectedness") and st.session_state.get("int
     display_account = globals().get("display_account") or st.session_state.get("saved_account", "Unknown Company")
     display_industry = globals().get("display_industry") or st.session_state.get("saved_industry", "Unknown Industry")
 
-    # Section header
+    # Section header - Updated to match Vocabulary style
     st.markdown(
         f"""
         <div style="margin: 20px 0;">
@@ -558,9 +558,12 @@ if st.session_state.get("show_interconnectedness") and st.session_state.get("int
                         Interconnectedness Analysis
                     </h3>
                     <p style="font-size:0.95rem; color:white; margin:0; line-height:1.5; text-align:center; max-width: 800px;">
-                        This is an <strong>AI-generated Interconnectedness Analysis</strong> for 
-                        <strong>{display_account}</strong> in the <strong>{display_industry}</strong> industry, 
-                        based on your problem statement.
+                        Please note that it is an <strong>AI-generated Interconnectedness Analysis</strong>, derived from 
+                        the <em>company</em> <strong>{display_account}</strong> and 
+                        the <em>industry</em> <strong>{display_industry}</strong> based on the 
+                        <em>problem statement</em> you shared.<br>
+                        In case you find something off, there's a provision to share feedback at the bottom 
+                        we encourage you to use it.
                     </p>
                 </div>
             </div>
@@ -614,44 +617,41 @@ if st.session_state.get("show_interconnectedness") and st.session_state.get("int
         # Convert newlines to <br>
         html_body = formatted_output.replace('\n', '<br>')
 
-       # For each agent's content box:
-st.markdown(
-    f"""
-    <div style="
-        background: var(--bg-card);
-        border: 2px solid #8b1e1e;
-        border-radius: 16px;
-        padding: 1.6rem;
-        margin-bottom: 1.6rem;
-        box-shadow: 0 3px 10px rgba(139,30,30,0.15);
-    ">
-        <h4 style="
-            color: #8b1e1e;
-            font-weight: 700;
-            font-size: 1.15rem;
-            margin: 0 0 1rem 0;
-            border-bottom: 2px solid #8b1e1e;
-            padding-bottom: 0.5rem;
-            text-align: left;
-        ">
-            Your Title Here
-        </h4>
-        <div style="
-            color: var(--text-primary);
-            line-height: 1.3;
-            font-size: 1rem;
-            text-align: left;
-            white-space: normal;
-        ">
-            {your_content_here}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-
+        # Content box with red border styling like Vocabulary
+        st.markdown(
+            f"""
+            <div style="
+                background: var(--bg-card);
+                border: 2px solid #8b1e1e;
+                border-radius: 16px;
+                padding: 1.6rem;
+                margin-bottom: 1.6rem;
+                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
+            ">
+                <h4 style="
+                    color: #8b1e1e;
+                    font-weight: 700;
+                    font-size: 1.15rem;
+                    margin: 0 0 1rem 0;
+                    border-bottom: 2px solid #8b1e1e;
+                    padding-bottom: 0.5rem;
+                    text-align: left;
+                ">
+                    {clean_question}
+                </h4>
+                <div style="
+                    color: var(--text-primary);
+                    line-height: 1.45;
+                    font-size: 1rem;
+                    text-align: left;
+                    white-space: normal;
+                ">
+                    {html_body}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     # ===============================
     # User Feedback Section
     # ===============================
@@ -833,3 +833,4 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
