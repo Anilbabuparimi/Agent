@@ -305,6 +305,7 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
     account = st.session_state.get("current_account", "")
     industry = st.session_state.get("current_industry", "")
     problem_statement = st.session_state.get("current_problem", "")
+    employee_id = st.session_state.get("employee_id", "")  # ADD THIS LINE
 
     # Create feedback data for admin session
     feedback_data = {
@@ -316,7 +317,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
         "Suggestions": suggestions,
         "Account": account,
         "Industry": industry,
-        "ProblemStatement": problem_statement
+        "ProblemStatement": problem_statement,
+        "EmployeeID": employee_id  # ADD THIS FIELD
     }
 
     # Save to admin session storage
@@ -324,8 +326,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
 
     # Also save to CSV file (original functionality)
     new_entry = pd.DataFrame([[
-        timestamp, name, email, additional_feedback, feedback_type, off_definitions, suggestions, account, industry, problem_statement
-    ]], columns=["Timestamp", "Name", "Email", "Feedback", "FeedbackType", "OffDefinitions", "Suggestions", "Account", "Industry", "ProblemStatement"])
+        timestamp, name, email, additional_feedback, feedback_type, off_definitions, suggestions, account, industry, problem_statement, employee_id  # ADD employee_id
+    ]], columns=["Timestamp", "Name", "Email", "Feedback", "FeedbackType", "OffDefinitions", "Suggestions", "Account", "Industry", "ProblemStatement", "EmployeeID"])  # ADD EmployeeID column
 
     try:
         # Try file-based storage first
@@ -598,7 +600,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
         unsafe_allow_html=True
     )
 
-    # ===============================
+# ===============================
 # User Feedback Section
 # ===============================
 
@@ -666,8 +668,9 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("vocab_feedback_positive", clear_on_submit=True):
             st.info("Thank you for your positive feedback!")
             
-            # Show Employee ID only
-            st.text_input("Employee ID", value=st.session_state.employee_id, disabled=True)
+            # Show Employee ID (get from session state)
+            employee_id = st.session_state.get('employee_id', 'Not provided')
+            st.text_input("Employee ID", value=employee_id, disabled=True)
             
             submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
             if submitted:
@@ -680,8 +683,9 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("vocab_feedback_definitions", clear_on_submit=True):
             st.markdown("**Please select which definitions seem off:**")
             
-            # Show Employee ID only
-            st.text_input("Employee ID", value=st.session_state.employee_id, disabled=True)
+            # Show Employee ID (get from session state)
+            employee_id = st.session_state.get('employee_id', 'Not provided')
+            st.text_input("Employee ID", value=employee_id, disabled=True)
 
             # VOCABULARY-SPECIFIC SECTIONS
             st.markdown("### Select problematic definitions:")
@@ -726,8 +730,9 @@ if not st.session_state.get('feedback_submitted', False):
         with st.form("vocab_feedback_suggestions", clear_on_submit=True):
             st.markdown("**Please share your suggestions for improvement:**")
             
-            # Show Employee ID only
-            st.text_input("Employee ID", value=st.session_state.employee_id, disabled=True)
+            # Show Employee ID (get from session state)
+            employee_id = st.session_state.get('employee_id', 'Not provided')
+            st.text_input("Employee ID", value=employee_id, disabled=True)
             
             suggestions = st.text_area(
                 "Your suggestions:",
@@ -799,3 +804,4 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
