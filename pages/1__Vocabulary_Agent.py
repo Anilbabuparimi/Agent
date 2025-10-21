@@ -549,209 +549,508 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
         unsafe_allow_html=True,
     )
 
-    # Format and display vocabulary with account/industry substitutions
-    vocab_text = st.session_state.vocab_output
-    formatted_vocab = format_vocabulary_with_bold(vocab_text)
+    # Enhanced CSS for dropdowns and dark mode
+    st.markdown("""
+    <style>
+        /* Employee ID display styling for dark mode */
+        .employee-id-display {
+            background: rgba(139, 30, 30, 0.1);
+            border: 1px solid rgba(139, 30, 30, 0.3);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            margin: 1rem 0;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .employee-id-display {
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Dropdown container styling */
+        .dropdown-container {
+            background: var(--background-color);
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        [data-theme="dark"] .dropdown-container {
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Dropdown header styling */
+        .dropdown-header {
+            background: linear-gradient(135deg, #8b1e1e, #ff6b35);
+            color: white;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-header:hover {
+            background: linear-gradient(135deg, #7a1a1a, #e65a2b);
+        }
+        
+        /* Dropdown content styling */
+        .dropdown-content {
+            padding: 1.5rem;
+            background: var(--background-color);
+            color: var(--text-color);
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        [data-theme="dark"] .dropdown-content {
+            background: rgba(20, 20, 30, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Nested dropdown styling */
+        .nested-dropdown {
+            background: rgba(139, 30, 30, 0.05);
+            border: 1px solid rgba(139, 30, 30, 0.2);
+            border-radius: 6px;
+            margin: 0.8rem 0;
+            overflow: hidden;
+        }
+        
+        [data-theme="dark"] .nested-dropdown {
+            background: rgba(255, 107, 53, 0.05);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+        }
+        
+        .nested-header {
+            background: rgba(139, 30, 30, 0.1);
+            color: var(--text-color);
+            padding: 0.8rem 1.2rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        [data-theme="dark"] .nested-header {
+            background: rgba(255, 107, 53, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .nested-content {
+            padding: 1rem 1.2rem;
+            background: var(--background-color);
+            color: var(--text-color);
+            border-top: 1px solid rgba(139, 30, 30, 0.1);
+        }
+        
+        [data-theme="dark"] .nested-content {
+            background: rgba(15, 15, 25, 0.9);
+            border-top: 1px solid rgba(255, 107, 53, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Section 4 styling (no dropdown) */
+        .section-four {
+            background: linear-gradient(135deg, rgba(139, 30, 30, 0.1), rgba(255, 107, 53, 0.05));
+            border: 1px solid rgba(139, 30, 30, 0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .section-four {
+            background: linear-gradient(135deg, rgba(139, 30, 30, 0.2), rgba(255, 107, 53, 0.1));
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .section-four h4 {
+            color: #8b1e1e;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        [data-theme="dark"] .section-four h4 {
+            color: #ff6b35;
+        }
+        
+        /* Text content styling */
+        .vocab-content {
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .vocab-content strong {
+            color: #8b1e1e;
+            font-weight: 700;
+        }
+        
+        [data-theme="dark"] .vocab-content strong {
+            color: #ff6b35;
+        }
+        
+        /* Arrow icons */
+        .arrow {
+            transition: transform 0.3s ease;
+        }
+        
+        .arrow.rotated {
+            transform: rotate(180deg);
+        }
+        
+        /* Definition item styling */
+        .definition-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(139, 30, 30, 0.1);
+        }
+        
+        [data-theme="dark"] .definition-item {
+            border-bottom: 1px solid rgba(255, 107, 53, 0.1);
+        }
+        
+        .definition-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # Replace generic mentions in the formatted HTML
-    if display_account and display_account != "Unknown Company":
-        formatted_vocab = re.sub(
-            r'\bthe company\b', display_account, formatted_vocab, flags=re.IGNORECASE)
-    if display_industry and display_industry != "Unknown Industry":
-        formatted_vocab = re.sub(
-            r'\bthe industry\b', display_industry, formatted_vocab, flags=re.IGNORECASE)
-
-    # Convert newlines to <br> for proper HTML display
-    html_body = formatted_vocab.replace('\n', '<br>')
-
-        # Single box for vocabulary with proper spacing and visible border
+    # Display Employee ID prominently
+    employee_id = st.session_state.get('employee_id', 'Not provided')
     st.markdown(
         f"""
-        <div style="
-            background: var(--bg-card);
-            border: 2px solid #8b1e1e;
-            border-radius: 16px;
-            padding: 1.6rem;
-            margin-bottom: 1.6rem;
-            box-shadow: 0 3px 10px rgba(139,30,30,0.15);
-        ">
-            <h4 style="
-                color: #8b1e1e;
-                font-weight: 700;
-                font-size: 1.15rem;
-                margin: 0 0 1rem 0;
-                border-bottom: 2px solid #8b1e1e;
-                padding-bottom: 0.5rem;
-                text-align: left;
-            ">
-                Key Terminology
-            </h4>
-            <div style="
-                color: var(--text-primary);
-                line-height: 1.3;
-                font-size: 1rem;
-                text-align: left;
-                white-space: normal;
-            ">
-                {html_body}
-            </div>
+        <div class="employee-id-display">
+            <strong>👤 Employee ID:</strong> {employee_id}
         </div>
         """,
         unsafe_allow_html=True
     )
 
-# ===============================
-# User Feedback Section
-# ===============================
-
-st.markdown("---")
-st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
-            unsafe_allow_html=True)
-st.markdown("Please share your thoughts or suggestions after reviewing the vocabulary analysis.")
-
-# CSS for colorful buttons and dark mode
-st.markdown("""
-<style>
-    /* Colorful submit buttons */
-    .stFormSubmitButton > button {
-        background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 50%, #8b1e1e 100%) !important;
-        background-size: 200% auto !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 0.8rem 2rem !important;
-        font-weight: 800 !important;
-        font-size: 1rem !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 4px 15px rgba(139, 30, 30, 0.3) !important;
-        transition: all 0.4s ease !important;
-    }
-    .stFormSubmitButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(139, 30, 30, 0.5) !important;
-        background-position: right center !important;
-    }
+    # ===============================
+    # DYNAMIC VOCABULARY PARSING
+    # ===============================
     
-    /* Dark mode checkbox fixes */
-    .stCheckbox > label {
-        color: inherit !important;
-        font-weight: 500 !important;
-    }
-    .stCheckbox > div[data-baseweb="checkbox"] {
-        background-color: transparent !important;
-    }
-    [data-theme="dark"] .stCheckbox > label {
-        color: rgba(250, 250, 250, 0.95) !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Show feedback section if not submitted
-if not st.session_state.get('feedback_submitted', False):
-    fb_choice = st.radio(
-        "Select your feedback type:",
-        options=[
-            "I have read it, found it useful, thanks.",
-            "I have read it, found some definitions to be off.",
-            "The widget seems interesting, but I have some suggestions on the features.",
-        ],
-        index=None,
-        key="vocab_feedback_radio",
-    )
-
-    if fb_choice:
-        st.session_state.feedback_option = fb_choice
-
-    # Feedback form 1: Positive feedback
-    if fb_choice == "I have read it, found it useful, thanks.":
-        with st.form("vocab_feedback_positive", clear_on_submit=True):
-            st.info("Thank you for your positive feedback!")
+    def parse_vocabulary_sections(text):
+        """Dynamically parse the API output into sections and items"""
+        sections = {}
+        current_section = None
+        current_items = []
+        
+        lines = text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
             
-            # Show Employee ID (get from session state)
-            employee_id = st.session_state.get('employee_id', 'Not provided')
-            st.text_input("Employee ID", value=employee_id, disabled=True)
+            # Detect section headers (Section X: ...)
+            section_match = re.match(r'^Section\s+(\d+):\s*(.+)$', line, re.IGNORECASE)
+            if section_match:
+                # Save previous section if exists
+                if current_section:
+                    sections[current_section] = current_items
+                
+                # Start new section
+                section_num = section_match.group(1)
+                section_title = section_match.group(2).strip()
+                current_section = f"Section {section_num}: {section_title}"
+                current_items = []
+                continue
             
-            submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
-            if submitted:
-                if submit_feedback(fb_choice):
-                    st.success("✅ Thank you! Your positive feedback has been recorded.")
-                    st.session_state.feedback_submitted = True
+            # Detect numbered items (1., 2., etc.) or bullet points
+            item_match = re.match(r'^(\d+\.)\s*(.+)$', line)
+            bullet_match = re.match(r'^[•\-]\s*(.+)$', line)
+            
+            if item_match or bullet_match:
+                if item_match:
+                    item_text = item_match.group(2).strip()
+                else:
+                    item_text = bullet_match.group(1).strip()
+                
+                # Extract term and definition
+                term_def_match = re.match(r'^(.+?):\s*(.+)$', item_text)
+                if term_def_match:
+                    term = term_def_match.group(1).strip()
+                    definition = term_def_match.group(2).strip()
+                    current_items.append((term, definition))
+                else:
+                    # If no colon, treat the whole line as term with empty definition
+                    current_items.append((item_text, ""))
+        
+        # Don't forget the last section
+        if current_section and current_items:
+            sections[current_section] = current_items
+        
+        return sections
 
-    # Feedback form 2: Definitions off
-    elif fb_choice == "I have read it, found some definitions to be off.":
-        with st.form("vocab_feedback_definitions", clear_on_submit=True):
-            st.markdown("**Please select which definitions seem off:**")
+    def parse_cohesive_narrative(text):
+        """Extract the cohesive narrative section"""
+        lines = text.split('\n')
+        narrative_started = False
+        narrative_lines = []
+        
+        for line in lines:
+            line = line.strip()
             
-            # Show Employee ID (get from session state)
-            employee_id = st.session_state.get('employee_id', 'Not provided')
-            st.text_input("Employee ID", value=employee_id, disabled=True)
+            # Look for "Section 4" or "Cohesive Narrative" or similar
+            if re.match(r'^Section\s+4:', line, re.IGNORECASE) or \
+               re.match(r'.*[Cc]ohesive.*[Nn]arrative.*', line):
+                narrative_started = True
+                continue
+            
+            # Stop if we hit the next section or end
+            if narrative_started and re.match(r'^Section\s+[1-9][0-9]*:', line):
+                break
+            
+            if narrative_started and line:
+                narrative_lines.append(line)
+        
+        return ' '.join(narrative_lines) if narrative_lines else None
 
-            # VOCABULARY-SPECIFIC SECTIONS
-            st.markdown("### Select problematic definitions:")
-            selected_issues = {}
+    # Parse the vocabulary output
+    vocab_text = st.session_state.vocab_output
+    sections = parse_vocabulary_sections(vocab_text)
+    cohesive_narrative = parse_cohesive_narrative(vocab_text)
+
+    # If no sections found with regex, try a fallback approach
+    if not sections:
+        sections = {}
+        lines = vocab_text.split('\n')
+        current_section = "Extracted Vocabulary"
+        current_items = []
+        
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('Section'):
+                # Try to find term: definition pattern
+                term_def_match = re.match(r'^(.+?):\s*(.+)$', line)
+                if term_def_match:
+                    term = term_def_match.group(1).strip()
+                    definition = term_def_match.group(2).strip()
+                    current_items.append((term, definition))
+        
+        if current_items:
+            sections[current_section] = current_items
+
+    # ===============================
+    # DYNAMIC DROPDOWN GENERATION
+    # ===============================
+
+    # Generate dropdowns for Sections 1-3
+    for section_title, items in sections.items():
+        # Skip Section 4 for now (we'll handle it separately)
+        if 'Section 4' in section_title or 'Cohesive Narrative' in section_title:
+            continue
             
-            vocab_sections = [
-                "Industry Terminology",
-                "Technical Terms", 
-                "Business Jargon",
-                "Acronyms & Abbreviations",
-                "Process Definitions",
-                "Methodology Terms"
-            ]
-            
-            for section in vocab_sections:
-                selected = st.checkbox(
-                    f"**{section}**",
-                    key=f"vocab_issue_{section}",
-                    help=f"Select if {section} definitions seem incorrect"
+        # Create expander for the main section
+        with st.expander(f"📚 {section_title}", expanded=False):
+            if items:
+                for i, (term, definition) in enumerate(items):
+                    # Create nested expander for each term
+                    with st.expander(f"🔹 {term}", expanded=False):
+                        if definition:
+                            st.markdown(f"""
+                            <div class="vocab-content">
+                                <strong>Definition:</strong> {definition}
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.info("No detailed definition available.")
+            else:
+                st.info("No vocabulary items found in this section.")
+
+    # ===============================
+    # SECTION 4 - COHESIVE NARRATIVE (No Dropdown)
+    # ===============================
+
+    st.markdown("---")
+    
+    # Use the parsed cohesive narrative or fallback
+    if cohesive_narrative:
+        narrative_content = cohesive_narrative
+    else:
+        # Fallback: try to find any remaining text that looks like a summary
+        narrative_content = "No cohesive narrative section found in the analysis."
+    
+    st.markdown(f"""
+    <div class="section-four">
+        <h4>📖 Section 4: Cohesive Narrative</h4>
+        <div class="vocab-content">
+            {narrative_content}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ===============================
+    # User Feedback Section
+    # ===============================
+
+    st.markdown("---")
+    st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("Please share your thoughts or suggestions after reviewing the vocabulary analysis.")
+
+    # CSS for colorful buttons and dark mode
+    st.markdown("""
+    <style>
+        /* Colorful submit buttons */
+        .stFormSubmitButton > button {
+            background: linear-gradient(135deg, #8b1e1e 0%, #ff6b35 50%, #8b1e1e 100%) !important;
+            background-size: 200% auto !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 0.8rem 2rem !important;
+            font-weight: 800 !important;
+            font-size: 1rem !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(139, 30, 30, 0.3) !important;
+            transition: all 0.4s ease !important;
+        }
+        .stFormSubmitButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(139, 30, 30, 0.5) !important;
+            background-position: right center !important;
+        }
+        
+        /* Dark mode checkbox fixes */
+        .stCheckbox > label {
+            color: inherit !important;
+            font-weight: 500 !important;
+        }
+        .stCheckbox > div[data-baseweb="checkbox"] {
+            background-color: transparent !important;
+        }
+        [data-theme="dark"] .stCheckbox > label {
+            color: rgba(250, 250, 250, 0.95) !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Show feedback section if not submitted
+    if not st.session_state.get('feedback_submitted', False):
+        fb_choice = st.radio(
+            "Select your feedback type:",
+            options=[
+                "I have read it, found it useful, thanks.",
+                "I have read it, found some definitions to be off.",
+                "The widget seems interesting, but I have some suggestions on the features.",
+            ],
+            index=None,
+            key="vocab_feedback_radio",
+        )
+
+        if fb_choice:
+            st.session_state.feedback_option = fb_choice
+
+        # Feedback form 1: Positive feedback
+        if fb_choice == "I have read it, found it useful, thanks.":
+            with st.form("vocab_feedback_positive", clear_on_submit=True):
+                st.info("Thank you for your positive feedback!")
+                
+                # Show Employee ID (get from session state)
+                employee_id = st.session_state.get('employee_id', 'Not provided')
+                st.text_input("Employee ID", value=employee_id, disabled=True)
+                
+                submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
+                if submitted:
+                    if submit_feedback(fb_choice):
+                        st.success("✅ Thank you! Your positive feedback has been recorded.")
+                        st.session_state.feedback_submitted = True
+
+        # Feedback form 2: Definitions off
+        elif fb_choice == "I have read it, found some definitions to be off.":
+            with st.form("vocab_feedback_definitions", clear_on_submit=True):
+                st.markdown("**Please select which definitions seem off:**")
+                
+                # Show Employee ID (get from session state)
+                employee_id = st.session_state.get('employee_id', 'Not provided')
+                st.text_input("Employee ID", value=employee_id, disabled=True)
+
+                # DYNAMIC FEEDBACK OPTIONS - Based on actual extracted terms
+                st.markdown("### Select problematic definitions:")
+                selected_issues = {}
+                
+                # Collect all terms from all sections for feedback
+                all_terms = []
+                for section_title, items in sections.items():
+                    for term, definition in items:
+                        all_terms.append(term)
+                
+                # If no structured terms found, provide generic options
+                if not all_terms:
+                    all_terms = [
+                        "Industry Terminology",
+                        "Technical Terms", 
+                        "Business Jargon",
+                        "Process Definitions"
+                    ]
+                
+                for term in all_terms:
+                    # Clean up term for display
+                    clean_term = re.sub(r'^\d+\.\s*', '', term)  # Remove leading numbers
+                    selected = st.checkbox(
+                        f"**{clean_term}**",
+                        key=f"vocab_issue_{hash(term)}",  # Use hash for unique key
+                        help=f"Select if {clean_term} definition seems incorrect"
+                    )
+                    if selected:
+                        selected_issues[clean_term] = True
+
+                additional_feedback = st.text_area(
+                    "Additional comments:",
+                    placeholder="Please provide more details about the definition issues you found..."
                 )
-                if selected:
-                    selected_issues[section] = True
 
-            additional_feedback = st.text_area(
-                "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found..."
-            )
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                if submitted:
+                    if not selected_issues:
+                        st.warning("⚠️ Please select at least one definition that seems off.")
+                    else:
+                        issues_list = list(selected_issues.keys())
+                        off_defs_text = " | ".join(issues_list)
+                        if submit_feedback(fb_choice, off_definitions=off_defs_text, additional_feedback=additional_feedback):
+                            st.success("✅ Thank you! Your feedback has been submitted.")
+                            st.session_state.feedback_submitted = True
 
-            submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
-            if submitted:
-                if not selected_issues:
-                    st.warning("⚠️ Please select at least one definition that seems off.")
-                else:
-                    issues_list = list(selected_issues.keys())
-                    off_defs_text = " | ".join(issues_list)
-                    if submit_feedback(fb_choice, off_definitions=off_defs_text, additional_feedback=additional_feedback):
-                        st.success("✅ Thank you! Your feedback has been submitted.")
-                        st.session_state.feedback_submitted = True
-
-    # Feedback form 3: Suggestions
-    elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
-        with st.form("vocab_feedback_suggestions", clear_on_submit=True):
-            st.markdown("**Please share your suggestions for improvement:**")
-            
-            # Show Employee ID (get from session state)
-            employee_id = st.session_state.get('employee_id', 'Not provided')
-            st.text_input("Employee ID", value=employee_id, disabled=True)
-            
-            suggestions = st.text_area(
-                "Your suggestions:",
-                placeholder="What features would you like to see improved or added to the vocabulary analysis?"
-            )
-            submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
-            if submitted:
-                if not suggestions.strip():
-                    st.warning("⚠️ Please provide your suggestions.")
-                else:
-                    if submit_feedback(fb_choice, suggestions=suggestions):
-                        st.success("✅ Thank you! Your feedback has been submitted.")
-                        st.session_state.feedback_submitted = True
-else:
-    # Feedback already submitted
-    st.success("✅ Thank you! Your feedback has been recorded.")
-    if st.button("📝 Submit Additional Feedback", key="vocab_reopen_feedback_btn", type="primary"):
-        st.session_state.feedback_submitted = False
-        st.rerun()
+        # Feedback form 3: Suggestions
+        elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
+            with st.form("vocab_feedback_suggestions", clear_on_submit=True):
+                st.markdown("**Please share your suggestions for improvement:**")
+                
+                # Show Employee ID (get from session state)
+                employee_id = st.session_state.get('employee_id', 'Not provided')
+                st.text_input("Employee ID", value=employee_id, disabled=True)
+                
+                suggestions = st.text_area(
+                    "Your suggestions:",
+                    placeholder="What features would you like to see improved or added to the vocabulary analysis?"
+                )
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                if submitted:
+                    if not suggestions.strip():
+                        st.warning("⚠️ Please provide your suggestions.")
+                    else:
+                        if submit_feedback(fb_choice, suggestions=suggestions):
+                            st.success("✅ Thank you! Your feedback has been submitted.")
+                            st.session_state.feedback_submitted = True
+    else:
+        # Feedback already submitted
+        st.success("✅ Thank you! Your feedback has been recorded.")
+        if st.button("📝 Submit Additional Feedback", key="vocab_reopen_feedback_btn", type="primary"):
+            st.session_state.feedback_submitted = False
+            st.rerun()
 # ===============================
 # Download Section - Only show if feedback submitted
 # ===============================
@@ -804,4 +1103,5 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
+
 
