@@ -642,8 +642,8 @@ def parse_vocabulary_sections(vocab_text):
             item_term = item_match.group(2).strip()
             item_definition = item_match.group(3).strip()
             
-            # Store both term and full text for display
-            display_text = f"{item_number}. {item_term}"
+            # Store just the term without number for display
+            display_text = f"{item_term}"
             current_items.append({
                 'display': display_text,
                 'full_text': f"{item_number}. {item_term}: {item_definition}"
@@ -678,46 +678,41 @@ if not st.session_state.get('feedback_submitted', False):
     # Feedback form 1: Positive feedback
     if fb_choice == "I have read it, found it useful, thanks.":
         with st.form("feedback_form_positive", clear_on_submit=True):
-            st.info(
-                "Thank you for your positive feedback!")
+            st.info("Thank you for your positive feedback!")
             
-            # Auto-extracted user info (from login)
+            # Auto-extracted user info from login (no manual input)
             user_id = st.session_state.get('user_id', 'N/A')
             
+            # Display user info in dark mode styled boxes
             st.markdown("**User Information:**")
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.text_input("User ID", value=user_id, disabled=True, key="user_id_display")
             with col2:
                 st.text_input("Account", value=display_account, disabled=True, key="account_display")
-            
-            col3, col4 = st.columns(2)
             with col3:
                 st.text_input("Industry", value=display_industry, disabled=True, key="industry_display")
             
             submitted = st.form_submit_button("📨 Submit Positive Feedback")
             if submitted:
                 if submit_feedback(fb_choice, user_id=user_id):
-                    st.success(
-                        "✅ Thank you! Your positive feedback has been recorded.")
+                    st.success("✅ Thank you! Your positive feedback has been recorded.")
 
     # Feedback form 2: Definitions off
     elif fb_choice == "I have read it, found some definitions to be off.":
         with st.form("feedback_form_defs", clear_on_submit=True):
-            st.markdown(
-                "**Please select which sections and terms have definitions that seem off:**")
+            st.markdown("**Please select which sections and terms have definitions that seem off:**")
             
-            # Auto-extracted user info (from login)
+            # Auto-extracted user info from login (no manual input)
             user_id = st.session_state.get('user_id', 'N/A')
             
+            # Display user info in dark mode styled boxes
             st.markdown("**User Information:**")
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.text_input("User ID", value=user_id, disabled=True, key="user_id_defs")
             with col2:
                 st.text_input("Account", value=display_account, disabled=True, key="account_defs")
-            
-            col3, col4 = st.columns(2)
             with col3:
                 st.text_input("Industry", value=display_industry, disabled=True, key="industry_defs")
 
@@ -727,36 +722,45 @@ if not st.session_state.get('feedback_submitted', False):
             if sections_data:
                 for section_name, items in sections_data.items():
                     if items:  # Only show sections that have items
-                        st.markdown(f"### {section_name}")
+                        # Remove "Section X: " prefix for cleaner display
+                        display_section_name = section_name.replace('Section 1: ', '').replace('Section 2: ', '').replace('Section 3: ', '').replace('Section 4: ', '')
                         
-                        # Extract just the display text for multiselect options
+                        st.markdown(f"### {display_section_name}")
+                        
+                        # Extract just the display text for multiselect options (terms only, no numbers)
                         options = [item['display'] for item in items]
                         
                         selected_items = st.multiselect(
-                            f"Select problematic terms in {section_name}:",
+                            f"Select problematic terms in {display_section_name}:",
                             options=options,
                             key=f"multiselect_{section_name}",
-                            help=f"Select terms from {section_name} that have definition issues"
+                            help=f"Select terms from {display_section_name} that have definition issues"
                         )
                         
                         if selected_items:
                             selected_issues[section_name] = selected_items
             else:
-                # Fallback if no sections parsed
+                # Fallback if no sections parsed - using your example structure
                 st.warning("No vocabulary sections found to provide feedback on.")
+                
+                # Define fallback sections based on your example output
                 fallback_sections = {
-                    "Section 1: Extract and Define Business Vocabulary Terms": [
-                        "1. Managed Pros", "2. Account Support", "3. Growth Strategies", 
-                        "4. Tailored Strategies", "5. Upselling", "6. Revenue Growth",
-                        "7. Lifetime Value (LTV)", "8. Missed Opportunities", "9. Suboptimal"
+                    "Extract and Define Business Vocabulary Terms": [
+                        "Managed Pros", "Account Support", "Growth Strategies", 
+                        "Tailored Strategies", "Upselling", "Revenue Growth",
+                        "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
                     ],
-                    "Section 2: Identify KPIs and Metrics": [
-                        "1. Customer Lifetime Value (LTV)", "2. Revenue Growth Rate", 
-                        "3. Upsell Rate", "4. Customer Satisfaction Score (CSAT)"
+                    "Identify KPIs and Metrics": [
+                        "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
+                        "Upsell Rate", "Customer Satisfaction Score (CSAT)"
                     ],
-                    "Section 3: Identify Relevant Business Processes": [
-                        "1. Account Management Process", "2. Sales Strategy Development", 
-                        "3. Customer Feedback Loop"
+                    "Identify Relevant Business Processes": [
+                        "Account Management Process", "Sales Strategy Development", 
+                        "Customer Feedback Loop"
+                    ],
+                    "Present a Cohesive Narrative": [
+                        "Business Problem Context", "Performance Indicators", 
+                        "Upstream Processes", "Interconnectedness Analysis"
                     ]
                 }
                 
@@ -779,8 +783,7 @@ if not st.session_state.get('feedback_submitted', False):
             submitted = st.form_submit_button("📨 Submit Feedback")
             if submitted:
                 if not selected_issues:
-                    st.warning(
-                        "⚠️ Please select at least one term that has definition issues.")
+                    st.warning("⚠️ Please select at least one term that has definition issues.")
                 else:
                     # Format issues for submission
                     issues_list = []
@@ -790,26 +793,23 @@ if not st.session_state.get('feedback_submitted', False):
                     
                     off_defs_text = " | ".join(issues_list)
                     if submit_feedback(fb_choice, user_id=user_id, off_definitions=off_defs_text, additional_feedback=additional_feedback):
-                        st.success(
-                            "✅ Thank you! Your feedback has been submitted.")
+                        st.success("✅ Thank you! Your feedback has been submitted.")
 
     # Feedback form 3: Suggestions
     elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
         with st.form("feedback_form_suggestions", clear_on_submit=True):
-            st.markdown(
-                "**Please share your suggestions for improvement:**")
+            st.markdown("**Please share your suggestions for improvement:**")
             
-            # Auto-extracted user info (from login)
+            # Auto-extracted user info from login (no manual input)
             user_id = st.session_state.get('user_id', 'N/A')
             
+            # Display user info in dark mode styled boxes
             st.markdown("**User Information:**")
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.text_input("User ID", value=user_id, disabled=True, key="user_id_suggestions")
             with col2:
                 st.text_input("Account", value=display_account, disabled=True, key="account_suggestions")
-            
-            col3, col4 = st.columns(2)
             with col3:
                 st.text_input("Industry", value=display_industry, disabled=True, key="industry_suggestions")
             
@@ -823,8 +823,7 @@ if not st.session_state.get('feedback_submitted', False):
                     st.warning("⚠️ Please provide your suggestions.")
                 else:
                     if submit_feedback(fb_choice, user_id=user_id, suggestions=suggestions):
-                        st.success(
-                            "✅ Thank you! Your feedback has been submitted.")
+                        st.success("✅ Thank you! Your feedback has been submitted.")
 else:
     # Feedback already submitted
     st.success("✅ Thank you! Your feedback has been recorded.")
@@ -832,24 +831,77 @@ else:
         st.session_state.feedback_submitted = False
         st.rerun()
 
-# Add custom CSS for dark mode styling
+# Add enhanced custom CSS for dark mode styling
 st.markdown("""
 <style>
     /* Dark mode styling for disabled inputs */
     .stTextInput [data-baseweb="input"]:disabled {
-        background-color: #2b2b2b !important;
+        background-color: #1e1e1e !important;
         color: #ffffff !important;
-        border-color: #555555 !important;
+        border-color: #444444 !important;
+        opacity: 0.8;
     }
     
     /* Multiselect dark mode improvements */
     .stMultiSelect [data-baseweb="select"] {
-        background-color: #262730;
+        background-color: #262730 !important;
+        border-color: #444444 !important;
+    }
+    
+    .stMultiSelect [data-baseweb="select"]:hover {
+        border-color: #666666 !important;
+    }
+    
+    .stMultiSelect [data-baseweb="select"]:focus-within {
+        border-color: #8b1e1e !important;
+        box-shadow: 0 0 0 1px #8b1e1e !important;
     }
     
     .stMultiSelect [data-baseweb="tag"] {
-        background-color: #4a4a4a;
-        color: white;
+        background-color: #8b1e1e !important;
+        color: white !important;
+        border-radius: 12px !important;
+    }
+    
+    .stMultiSelect [data-baseweb="popover"] {
+        background-color: #262730 !important;
+        border: 1px solid #444444 !important;
+    }
+    
+    .stMultiSelect [role="listbox"] {
+        background-color: #262730 !important;
+        color: white !important;
+    }
+    
+    .stMultiSelect [role="option"] {
+        background-color: #262730 !important;
+        color: white !important;
+    }
+    
+    .stMultiSelect [role="option"]:hover {
+        background-color: #8b1e1e !important;
+        color: white !important;
+    }
+    
+    /* Radio button dark mode improvements */
+    .stRadio [data-baseweb="radio"] {
+        background-color: transparent !important;
+    }
+    
+    .stRadio [data-baseweb="radio"] div {
+        color: white !important;
+    }
+    
+    /* Text area dark mode improvements */
+    .stTextArea [data-baseweb="textarea"] {
+        background-color: #262730 !important;
+        color: white !important;
+        border-color: #444444 !important;
+    }
+    
+    .stTextArea [data-baseweb="textarea"]:focus {
+        border-color: #8b1e1e !important;
+        box-shadow: 0 0 0 1px #8b1e1e !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -904,4 +956,5 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
