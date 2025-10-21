@@ -654,17 +654,6 @@ def parse_vocabulary_sections(vocab_text):
 vocab_text = st.session_state.get("vocab_output", "")
 sections_data = parse_vocabulary_sections(vocab_text)
 
-# DEBUG: Check what was parsed (hidden from users)
-if st.session_state.get('show_vocabulary') and st.session_state.get('analysis_complete'):
-    # This is hidden but helps us see if parsing is working
-    debug_info = {
-        "raw_text_length": len(vocab_text),
-        "sections_found": list(sections_data.keys()),
-        "section_counts": {section: len(items) for section, items in sections_data.items()}
-    }
-    # Uncomment the line below to see debug info in terminal (not visible to users)
-    # print("DEBUG PARSING:", debug_info)
-
 # FIXED: Get employee ID from login page
 def get_user_id():
     if 'employee_id' in st.session_state and st.session_state.employee_id:
@@ -689,6 +678,19 @@ def get_user_id():
 # Get the actual user ID
 user_id = get_user_id()
 
+# FIXED SUBMIT FEEDBACK FUNCTION CALL
+def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
+    """Wrapper for submit_feedback to handle the parameter mismatch"""
+    # Call the original submit_feedback function with correct parameters
+    return submit_feedback(
+        feedback_type=feedback_type,
+        name=user_id,  # Map user_id to name parameter
+        email="",  # Empty email since we're using user_id
+        off_definitions=off_definitions,
+        suggestions=suggestions,
+        additional_feedback=additional_feedback
+    )
+
 # Show feedback section if not submitted
 if not st.session_state.get('feedback_submitted', False):
     fb_choice = st.radio(
@@ -712,7 +714,8 @@ if not st.session_state.get('feedback_submitted', False):
             st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_display")
             submitted = st.form_submit_button("📨 Submit Positive Feedback")
             if submitted:
-                if submit_feedback(fb_choice, user_id=user_id):
+                # FIXED: Use the wrapper function
+                if submit_feedback_wrapper(fb_choice, user_id=user_id):
                     st.success("✅ Thank you! Your positive feedback has been recorded.")
 
     # Feedback form 2: Definitions off - FIXED DYNAMIC DROPDOWNS
@@ -747,8 +750,6 @@ if not st.session_state.get('feedback_submitted', False):
                 # First try to get dynamically parsed items
                 if section_name in sections_data and sections_data[section_name]:
                     items = sections_data[section_name]
-                    # Show a small indicator that this is dynamically loaded
-                    st.caption(f"📊 Found {len(items)} terms")
                 else:
                     # Fallback to predefined items only if no dynamic data
                     fallback_items = {
@@ -771,14 +772,13 @@ if not st.session_state.get('feedback_submitted', False):
                         ]
                     }
                     items = fallback_items.get(section_name, [])
-                    st.caption("📝 Using standard terms")
                 
                 # Show dropdown for ALL sections
                 if items:
                     selected_items = st.multiselect(
                         f"Select problematic terms in {display_section_name}:",
                         options=items,
-                        key=f"multiselect_{section_name}_{hash(str(items))}",  # Unique key based on content
+                        key=f"multiselect_{section_name}",
                         help=f"Select terms from {display_section_name} that have definition issues"
                     )
                 else:
@@ -805,7 +805,14 @@ if not st.session_state.get('feedback_submitted', False):
                             issues_list.append(f"{section} - {item}")
                     
                     off_defs_text = " | ".join(issues_list) if issues_list else "No specific terms selected"
-                    if submit_feedback(fb_choice, user_id=user_id, off_definitions=off_defs_text, additional_feedback=additional_feedback):
+                    
+                    # FIXED: Use the wrapper function with correct parameters
+                    if submit_feedback_wrapper(
+                        feedback_type=fb_choice, 
+                        user_id=user_id, 
+                        off_definitions=off_defs_text, 
+                        additional_feedback=additional_feedback
+                    ):
                         st.success("✅ Thank you! Your feedback has been submitted.")
 
     # Feedback form 3: Suggestions
@@ -822,7 +829,8 @@ if not st.session_state.get('feedback_submitted', False):
                 if not suggestions.strip():
                     st.warning("⚠️ Please provide your suggestions.")
                 else:
-                    if submit_feedback(fb_choice, user_id=user_id, suggestions=suggestions):
+                    # FIXED: Use the wrapper function
+                    if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
                         st.success("✅ Thank you! Your feedback has been submitted.")
 else:
     # Feedback already submitted
@@ -908,18 +916,6 @@ st.markdown("""
         border-radius: 12px !important;
         font-weight: 500;
     }
-    
-    /* Caption styling */
-    .stCaption {
-        font-size: 0.8rem !important;
-        color: #666 !important;
-        margin-top: -10px !important;
-        margin-bottom: 10px !important;
-    }
-    
-    [data-theme="dark"] .stCaption {
-        color: #aaa !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 # ===============================
@@ -973,6 +969,7 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
 
 
