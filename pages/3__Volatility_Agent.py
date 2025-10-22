@@ -25,18 +25,25 @@ st.set_page_config(
 )
 
 # --- Initialize session state ---
-if 'volatile_outputs' not in st.session_state:
-    st.session_state.volatile_outputs = {}
-if 'show_volatility' not in st.session_state:
-    st.session_state.show_volatility = False
-if 'feedback_submitted' not in st.session_state:
-    st.session_state.feedback_submitted = False
-if 'feedback_option' not in st.session_state:
-    st.session_state.feedback_option = None
-if 'analysis_complete' not in st.session_state:
-    st.session_state.analysis_complete = False
-if 'validation_attempted' not in st.session_state:
-    st.session_state.validation_attempted = False
+session_defaults = {
+    'volatile_outputs': {},
+    'show_volatility': False,
+    'feedback_submitted': False,
+    'feedback_option': None,
+    'analysis_complete': False,
+    'validation_attempted': False,
+    # AGENT-SPECIFIC FEEDBACK TRACKING
+    'volatility_feedback_submitted': False,  # Unique to this agent
+    # ADMIN STATES
+    'admin_access_requested': False,
+    'admin_authenticated': False,
+    'current_page': '',
+    'show_admin_panel': False,
+    'admin_view_selected': False,
+}
+for key, val in session_defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
 
 # --- Render Header ---
 render_header(
@@ -374,7 +381,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
                 [st.session_state.feedback_data, new_entry], ignore_index=True)
             st.info("📝 Feedback saved to session (cloud mode)")
 
-        st.session_state.feedback_submitted = True
+        # SET AGENT-SPECIFIC FEEDBACK FLAG
+        st.session_state.volatility_feedback_submitted = True
         return True
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
@@ -384,7 +392,7 @@ def reset_app_state():
     """Completely reset session state to initial values"""
     # Clear volatility-related state
     keys_to_clear = ['volatile_outputs', 'show_volatility', 'feedback_submitted',
-                     'feedback_option', 'analysis_complete', 'validation_attempted']
+                     'feedback_option', 'analysis_complete', 'validation_attempted', 'volatility_feedback_submitted']
     for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
@@ -656,19 +664,56 @@ if st.session_state.get("show_volatility") and st.session_state.get("volatile_ou
             unsafe_allow_html=True
         )
 
+# ===============================
+# User Feedback Section (Only show after extraction)
+# ===============================
 
-    # ===============================
-    # User Feedback Section
-    # ===============================
-
+if st.session_state.get("show_volatility") and st.session_state.get("volatile_outputs"):
     st.markdown("---")
     st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
                 unsafe_allow_html=True)
-    st.markdown(
-        "Please share your thoughts or suggestions after reviewing the volatility analysis.")
+    
+    # UPDATED MESSAGE - Agent-specific
+    st.markdown("Please share your thoughts or suggestions after reviewing the **volatility analysis**.")
 
-    # Show feedback section if not submitted
-    if not st.session_state.get('feedback_submitted', False):
+    # Get employee ID from login page
+    def get_user_id():
+        if 'employee_id' in st.session_state and st.session_state.employee_id:
+            return st.session_state.employee_id
+        
+        possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
+        for key in possible_keys:
+            if key in st.session_state and st.session_state[key]:
+                return st.session_state[key]
+        
+        try:
+            shared_data = get_shared_data()
+            if shared_data and 'user_id' in shared_data:
+                return shared_data['user_id']
+            if shared_data and 'employee_id' in shared_data:
+                return shared_data['employee_id']
+        except:
+            pass
+        
+        return 'Not Available'
+
+    # Get the actual user ID
+    user_id = get_user_id()
+
+    # Updated submit_feedback function call
+    def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
+        """Wrapper for submit_feedback to handle employee ID"""
+        return submit_feedback(
+            feedback_type=feedback_type,
+            name=user_id,  # Map user_id to name parameter
+            email="",      # Empty email
+            off_definitions=off_definitions,
+            suggestions=suggestions,
+            additional_feedback=additional_feedback
+        )
+
+    # Show feedback section if not submitted - USING AGENT-SPECIFIC FLAG
+    if not st.session_state.get('volatility_feedback_submitted', False):
         fb_choice = st.radio(
             "Select your feedback type:",
             options=[
@@ -677,46 +722,33 @@ if st.session_state.get("show_volatility") and st.session_state.get("volatile_ou
                 "The widget seems interesting, but I have some suggestions on the features.",
             ],
             index=None,
-            key="feedback_radio",
+            key="volatility_feedback_radio",
         )
 
         if fb_choice:
             st.session_state.feedback_option = fb_choice
 
-        # Feedback form 1: Positive feedback
+        # Feedback form 1: Positive feedback - SIMPLIFIED
         if fb_choice == "I have read it, found it useful, thanks.":
-            with st.form("feedback_form_positive", clear_on_submit=True):
-                st.info(
-                    "Thank you for your positive feedback! Optional: Share your name and email.")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input(
-                        "Account", value=display_account, disabled=True)
-                with col2:
-                    st.text_input(
-                        "Industry", value=display_industry, disabled=True)
-                name = st.text_input("Your Name (optional)")
-                email = st.text_input("Your Email (optional)")
-                submitted = st.form_submit_button("📨 Submit Positive Feedback")
+            with st.form("volatility_feedback_form_positive", clear_on_submit=True):
+                st.info("Thank you for your positive feedback!")
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
+                
+                submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
                 if submitted:
-                    if submit_feedback(fb_choice, name=name, email=email):
-                        st.success(
-                            "✅ Thank you! Your positive feedback has been recorded.")
+                    if submit_feedback_wrapper(fb_choice, user_id=user_id):
+                        st.session_state.volatility_feedback_submitted = True
+                        st.success("✅ Thank you! Your feedback has been recorded.")
+                        st.rerun()
 
-        # Feedback form 2: Analyses off
+        # Feedback form 2: Analyses off - SIMPLIFIED
         elif fb_choice == "I have read it, found some analyses to be off.":
-            with st.form("feedback_form_analyses", clear_on_submit=True):
-                st.markdown(
-                    "**Please select which volatility analyses seem off:**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input(
-                        "Account", value=display_account, disabled=True)
-                with col2:
-                    st.text_input(
-                        "Industry", value=display_industry, disabled=True)
-                name = st.text_input("Your Name")
-                email = st.text_input("Your Email (optional)")
+            with st.form("volatility_feedback_form_analyses", clear_on_submit=True):
+                st.markdown("**Please select which volatility analyses seem off:**")
+                
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
 
                 # Show checkboxes for each volatility question
                 st.markdown("### Select problematic analyses:")
@@ -725,7 +757,7 @@ if st.session_state.get("show_volatility") and st.session_state.get("volatile_ou
                 for api_name in st.session_state.volatile_outputs.keys():
                     selected = st.checkbox(
                         f"**{api_name}** - {API_CONFIGS[next(i for i, cfg in enumerate(API_CONFIGS) if cfg['name'] == api_name)]['description']}",
-                        key=f"volatile_issue_{api_name}",
+                        key=f"volatility_issue_{api_name}",
                         help=f"Select if {api_name} analysis seems incorrect"
                     )
                     if selected:
@@ -733,85 +765,83 @@ if st.session_state.get("show_volatility") and st.session_state.get("volatile_ou
 
                 additional_feedback = st.text_area(
                     "Additional comments:",
-                    placeholder="Please provide more details about the analysis issues you found..."
+                    placeholder="Please provide more details about the analysis issues you found...",
+                    key="volatility_analyses_additional"
                 )
 
-                submitted = st.form_submit_button("📨 Submit Feedback")
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
                 if submitted:
                     if not selected_issues:
-                        st.warning(
-                            "⚠️ Please select at least one analysis that seems off.")
+                        st.warning("⚠️ Please select at least one analysis that seems off.")
                     else:
                         issues_list = list(selected_issues.keys())
                         off_defs_text = " | ".join(issues_list)
-                        if submit_feedback(fb_choice, name=name, email=email, off_definitions=off_defs_text, additional_feedback=additional_feedback):
-                            st.success(
-                                "✅ Thank you! Your feedback has been submitted.")
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, off_definitions=off_defs_text, additional_feedback=additional_feedback):
+                            st.session_state.volatility_feedback_submitted = True
+                            st.success("✅ Thank you! Your feedback has been recorded.")
+                            st.rerun()
 
-        # Feedback form 3: Suggestions
+        # Feedback form 3: Suggestions - SIMPLIFIED
         elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
-            with st.form("feedback_form_suggestions", clear_on_submit=True):
-                st.markdown(
-                    "**Please share your suggestions for improvement:**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.text_input(
-                        "Account", value=display_account, disabled=True)
-                with col2:
-                    st.text_input(
-                        "Industry", value=display_industry, disabled=True)
-                name = st.text_input("Your Name")
-                email = st.text_input("Your Email (optional)")
+            with st.form("volatility_feedback_form_suggestions", clear_on_submit=True):
+                st.markdown("**Please share your suggestions for improvement:**")
+                
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
+                
                 suggestions = st.text_area(
                     "Your suggestions:",
-                    placeholder="What features would you like to see improved or added?"
+                    placeholder="What features would you like to see improved or added?",
+                    key="volatility_suggestions_text"
                 )
-                submitted = st.form_submit_button("📨 Submit Feedback")
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
                 if submitted:
                     if not suggestions.strip():
                         st.warning("⚠️ Please provide your suggestions.")
                     else:
-                        if submit_feedback(fb_choice, name=name, email=email, suggestions=suggestions):
-                            st.success(
-                                "✅ Thank you! Your feedback has been submitted.")
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
+                            st.session_state.volatility_feedback_submitted = True
+                            st.success("✅ Thank you! Your feedback has been recorded.")
+                            st.rerun()
     else:
         # Feedback already submitted
         st.success("✅ Thank you! Your feedback has been recorded.")
-        if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn"):
-            st.session_state.feedback_submitted = False
+        if st.button("📝 Submit Additional Feedback", key="volatility_reopen_feedback_btn", type="primary"):
+            st.session_state.volatility_feedback_submitted = False
             st.rerun()
 
-# ===============================
-# Download Section - Only show if feedback submitted
-# ===============================
+    # ===============================
+    # Download Section (Only show after feedback submission - AGENT-SPECIFIC)
+    # ===============================
 
-if st.session_state.get('feedback_submitted', False):
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="margin: 10px 0;">
-            <div class="section-title-box" style="padding: 0.5rem 1rem;">
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <h3 style="margin:0; color:white; font-weight:700; font-size:1.2rem; line-height:1.2;">
-                        📥 Download Volatility Analysis
-                    </h3>
+    # USING AGENT-SPECIFIC FLAG for download section
+    if st.session_state.get('volatility_feedback_submitted', False):
+        st.markdown("---")
+        st.markdown(
+            """
+            <div style="margin: 10px 0;">
+                <div class="section-title-box" style="padding: 0.5rem 1rem;">
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <h3 style="margin:0; color:white; font-weight:700; font-size:1.2rem; line-height:1.2;">
+                            📥 Download Volatility Analysis
+                        </h3>
+                    </div>
                 </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # Combine all volatility outputs for download
-    combined_output = ""
-    for api_name, api_output in st.session_state.volatile_outputs.items():
-        if api_output and not api_output.startswith("API Error") and not api_output.startswith("Error:"):
-            combined_output += f"=== {api_name} ===\n{api_output}\n\n"
+        # Combine all volatility outputs for download
+        combined_output = ""
+        for api_name, api_output in st.session_state.volatile_outputs.items():
+            if api_output and not api_output.startswith("API Error") and not api_output.startswith("Error:"):
+                combined_output += f"=== {api_name} ===\n{api_output}\n\n"
 
-    if combined_output:
-        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"volatility_analysis_{display_account.replace(' ', '_')}_{ts}.txt"
-        download_content = f"""Volatility Analysis Export
+        if combined_output:
+            ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"volatility_analysis_{display_account.replace(' ', '_')}_{ts}.txt"
+            download_content = f"""Volatility Analysis Export
 Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Company: {display_account}
 Industry: {display_industry}
@@ -820,21 +850,20 @@ Industry: {display_industry}
 ---
 Generated by Volatility Analysis Tool
 """
-        st.download_button(
-            "⬇️ Download Volatility Analysis as Text File",
-            data=download_content,
-            file_name=filename,
-            mime="text/plain",
-            use_container_width=True
-        )
-    else:
-        st.info(
-            "No volatility analysis available for download. Please complete the analysis first.")
+            st.download_button(
+                "⬇️ Download Volatility Analysis as Text File",
+                data=download_content,
+                file_name=filename,
+                mime="text/plain",
+                use_container_width=True
+            )
+        else:
+            st.info(
+                "No volatility analysis available for download. Please complete the analysis first.")
 
 # =========================================
 # ⬅️ BACK BUTTON
 # =========================================
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
-
     st.switch_page("Welcome_Agent.py")
