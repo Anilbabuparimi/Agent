@@ -1,9 +1,9 @@
-
+update current_system also
 import streamlit as st
 from shared_header import (
     render_header,
     render_admin_panel,
-    save_feedback_to_admin_session,  # ADD THIS IMPORT
+    save_feedback_to_admin_session,
     render_unified_business_inputs,
     get_shared_data,
     ACCOUNTS,
@@ -29,7 +29,7 @@ st.set_page_config(
 )
 
 # =========================================
-# ⚙️ SESSION INITIALIZATION - ADD ADMIN STATES AND AGENT-SPECIFIC FEEDBACK
+# ⚙️ SESSION INITIALIZATION - AGENT-SPECIFIC FEEDBACK
 # =========================================
 session_defaults = {
     'dark_mode': False,
@@ -38,15 +38,14 @@ session_defaults = {
     'saved_problem': "",
     'current_system_extracted': False,
     'current_system_data': "",
-    'feedback_submitted': False,
-    # ADD ADMIN-RELATED SESSION STATES
+    # AGENT-SPECIFIC FEEDBACK TRACKING
+    'current_system_feedback_submitted': False,  # Unique to this agent
+    # ADMIN STATES
     'admin_access_requested': False,
     'admin_authenticated': False,
     'current_page': '',
     'show_admin_panel': False,
     'admin_view_selected': False,
-    # AGENT-SPECIFIC FEEDBACK TRACKING
-    'current_system_feedback_submitted': False,  # Agent-specific feedback flag
 }
 for key, val in session_defaults.items():
     if key not in st.session_state:
@@ -56,7 +55,7 @@ for key, val in session_defaults.items():
 # 🌐 API CONFIGURATION
 # =========================================
 TENANT_ID = "talos"
-AUTH_TOKEN = None  # set dynamically if needed
+AUTH_TOKEN = None
 HEADERS_BASE = {"Content-Type": "application/json"}
 
 CURRENT_SYSTEM_API_URL = (
@@ -138,13 +137,6 @@ def format_current_system_with_bold(text, extra_phrases=None):
     """
     Format Current System output with bold styling.
     Formats current system text with bold patterns and proper structure.
-
-    Formatting rules:
-      - Replace ' - ' with ' :'
-      - Normalize bullets(-, *) -> •
-      - Bold numbered headings and section titles
-      - Bold headings with colons
-      - Handle multi-section content (Current System, Inputs, Outputs, Pain Points)
     """
     if not text:
         return "No current system data available"
@@ -345,42 +337,6 @@ def parse_current_system_sections(text):
     return sections
 
 
-def format_section_box(content, title, icon=""):
-    """Simple section box without inner box - content starts below heading with one line gap"""
-    if not content or content == "No data available":
-        return f"""
-        <div style='background: var(--bg-card); border:1.5px solid rgba(139,30,30,0.25);
-            border-radius: 16px; padding: 1.5rem; margin:1.5rem 0;'>
-            <h4 style='color: var(--text-primary); margin:0 0 1rem 0; font-size:1.2rem;'>{icon} {title}</h4>
-            <p style='color: var(--text-secondary); font-style:italic;'>No data available</p>
-        </div>
-        """
-    
-    # Apply formatting to the content
-    formatted_content = format_current_system_with_bold(content)
-    
-    return f"""
-    <div style='background: var(--bg-card); border:1.5px solid rgba(139,30,30,0.25);
-        border-radius: 16px; padding: 1.5rem; margin:1.5rem 0;'>
-        <h4 style='color: var(--text-primary); margin:0 0 1rem 0; font-size:1.2rem;'>{icon} {title}</h4>
-        <div style='margin-top: 1rem; line-height:1.6; color: var(--text-primary);'>{formatted_content}</div>
-    </div>
-    """
-
-
-def format_side_by_side_section(left_content, left_title, left_icon, right_content, right_title, right_icon):
-    """Create a two-column layout for Inputs and Outputs"""
-    left_formatted = format_section_box(left_content, left_title, left_icon)
-    right_formatted = format_section_box(right_content, right_title, right_icon)
-    
-    return f"""
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0;">
-        <div>{left_formatted}</div>
-        <div>{right_formatted}</div>
-    </div>
-    """
-
-
 def call_api(agent_name, problem, context=""):
     """Call the Talos API using centralized API_CONFIGS"""
     config = next((a for a in API_CONFIGS if a["name"] == agent_name), None)
@@ -430,8 +386,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
         "ProblemStatement": problem_statement
     }
 
-    # Save to admin session storage (update the agent name accordingly for each agent)
-    save_feedback_to_admin_session(feedback_data, "Current System Agent")  # Change agent name per agent
+    # Save to admin session storage
+    save_feedback_to_admin_session(feedback_data, "Current System Agent")
 
     # Also save to CSV file (original functionality)
     new_entry = pd.DataFrame([[
@@ -466,14 +422,15 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
                 [st.session_state.feedback_data, new_entry], ignore_index=True)
             st.info("📝 Feedback saved to session (cloud mode)")
 
-        # Set agent-specific feedback flag instead of global flag
+        # Set AGENT-SPECIFIC feedback flag
         st.session_state.current_system_feedback_submitted = True
         return True
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
         return False
+
 # =========================================
-# 🧩 UI COMPONENTS (with admin toggle in header)
+# 🧩 UI COMPONENTS
 # =========================================
 
 # Check for admin mode first
@@ -495,7 +452,7 @@ if admin_toggled or st.session_state.get('current_page', '') == 'admin':
 render_header(
     agent_name="Current System Agent",
     agent_subtitle="Analyze your current system, inputs, outputs, and pain points",
-    enable_admin_access=True,   # ✅ Clicking logo toggles admin view via ?adminPanelToggled=true param
+    enable_admin_access=True,
     header_height=100
 )
 
@@ -512,7 +469,6 @@ st.markdown(
     "<hr style='border: 0; height: 1px; background: var(--divider-color, rgba(0,0,0,0.1)); margin: 1.5rem 0;'>",
     unsafe_allow_html=True
 )
-
 
 # =========================================
 # 🚀 API CALL BUTTON
@@ -538,6 +494,7 @@ if not st.session_state.current_system_extracted:
                     st.session_state.current_system_extracted = True
                     st.success("✅ Current System extracted successfully!")
                     _safe_rerun()
+
 # =========================================
 # 📊 DISPLAY RESULTS
 # =========================================
@@ -773,239 +730,239 @@ if st.session_state.current_system_extracted:
         """,
         unsafe_allow_html=True
     )
+
 # ===============================
 # User Feedback Section (Only show after extraction)
 # ===============================
 
-st.markdown("---")
-st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
-            unsafe_allow_html=True)
-st.markdown(
-    "Please share your thoughts or suggestions after reviewing the current system analysis.")
-
-# Get account and industry from session state (user entered values)
-current_account = st.session_state.get("current_account", "") or st.session_state.get("saved_account", "")
-current_industry = st.session_state.get("current_industry", "") or st.session_state.get("saved_industry", "")
-current_problem = st.session_state.get("current_problem", "") or st.session_state.get("saved_problem", "")
-
-# Dark mode compatible CSS
-st.markdown("""
-    <style>
-    /* Mu Sigma red button styling */
-    .stButton>button {
-        background-color: #8B1E1E !important;
-        color: white !important;
-        border: none !important;
-        padding: 0.5rem 1rem !important;
-        border-radius: 4px !important;
-        font-weight: 600 !important;
-    }
-    .stButton>button:hover {
-        background-color: #6B1515 !important;
-        color: white !important;
-    }
+if st.session_state.current_system_extracted:
+    st.markdown("---")
+    st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
+                unsafe_allow_html=True)
     
-    /* Dark mode compatibility for form elements */
-    .stTextInput input, .stTextArea textarea {
-        background-color: transparent !important;
-        color: inherit !important;
-    }
-    
-    /* Checkbox labels */
-    .stCheckbox label {
-        color: inherit !important;
-    }
-    
-    /* Radio button labels */  
-    .stRadio label {
-        color: inherit !important;
-    }
-    
-    /* Form container */
-    .stForm {
-        background-color: transparent !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+    # UPDATED MESSAGE - Agent-specific
+    st.markdown("Please share your thoughts or suggestions after reviewing the **current system analysis**.")
 
-# Show feedback section if not submitted - USING AGENT-SPECIFIC FLAG
-if not st.session_state.get('current_system_feedback_submitted', False):
-    fb_choice = st.radio(
-        "Select your feedback type:",
-        options=[
-            "I have read it, found it useful, thanks.",
-            "I have read it, found some definitions to be off.",
-            "The widget seems interesting, but I have some suggestions on the features.",
-        ],
-        index=None,
-        key="feedback_radio",
-    )
+    # Get account and industry from session state
+    current_account = st.session_state.get("current_account", "") or st.session_state.get("saved_account", "")
+    current_industry = st.session_state.get("current_industry", "") or st.session_state.get("saved_industry", "")
+    current_problem = st.session_state.get("current_problem", "") or st.session_state.get("saved_problem", "")
 
-    if fb_choice:
-        st.session_state.feedback_option = fb_choice
+    # Dark mode compatible CSS
+    st.markdown("""
+        <style>
+        /* Mu Sigma red button styling */
+        .stButton>button {
+            background-color: #8B1E1E !important;
+            color: white !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 4px !important;
+            font-weight: 600 !important;
+        }
+        .stButton>button:hover {
+            background-color: #6B1515 !important;
+            color: white !important;
+        }
+        
+        /* Dark mode compatibility for form elements */
+        .stTextInput input, .stTextArea textarea {
+            background-color: transparent !important;
+            color: inherit !important;
+        }
+        
+        /* Checkbox labels */
+        .stCheckbox label {
+            color: inherit !important;
+        }
+        
+        /* Radio button labels */  
+        .stRadio label {
+            color: inherit !important;
+        }
+        
+        /* Form container */
+        .stForm {
+            background-color: transparent !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    # Feedback form 1: Positive feedback
-    if fb_choice == "I have read it, found it useful, thanks.":
-        with st.form("feedback_form_positive", clear_on_submit=True):
-            st.info(
-                "Thank you for your positive feedback! Optional: Share your name and email.")
-            
-            name = st.text_input("Your Name (optional)", key="positive_name")
-            email = st.text_input("Your Email (optional)", key="positive_email")
-            
-            submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
-            if submitted:
-                if submit_feedback(fb_choice, name=name, email=email, 
-                                 account=current_account, industry=current_industry, 
-                                 problem_statement=current_problem):
-                    st.session_state.current_system_feedback_submitted = True
-                    st.success(
-                        "✅ Thank you! Your positive feedback has been recorded.")
-                    st.rerun()
+    # Show feedback section if not submitted - USING AGENT-SPECIFIC FLAG
+    if not st.session_state.get('current_system_feedback_submitted', False):
+        fb_choice = st.radio(
+            "Select your feedback type:",
+            options=[
+                "I have read it, found it useful, thanks.",
+                "I have read it, found some definitions to be off.",
+                "The widget seems interesting, but I have some suggestions on the features.",
+            ],
+            index=None,
+            key="current_system_feedback_radio",  # Agent-specific key
+        )
 
-    # Feedback form 2: Definitions off
-    elif fb_choice == "I have read it, found some definitions to be off.":
-        with st.form("feedback_form_defs", clear_on_submit=True):
-            st.markdown(
-                "**Please select which sections have definitions that seem off:**")
-            
-            name = st.text_input("Your Name *", key="defs_name")
-            email = st.text_input("Your Email (optional)", key="defs_email")
+        if fb_choice:
+            st.session_state.current_system_feedback_option = fb_choice
 
-            # Section selection with better styling
-            st.markdown("### Select problematic sections:")
-            st.markdown("<div style='margin-bottom: 1rem;'>Select all that apply:</div>", unsafe_allow_html=True)
-            
-            sections_list = [
-                "Core Business Problem",
-                "Current System Overview", 
-                "Key Technologies/Tools",
-                "Roles/Stakeholders",
-                "Inputs",
-                "Outputs", 
-                "Pain Points"
-            ]
-            
-            selected_issues = {}
-            for i, section in enumerate(sections_list):
-                # Use a unique key for each checkbox
-                selected = st.checkbox(
-                    section,
-                    key=f"def_section_{i}",
-                    help=f"Select if {section} has definition issues"
-                )
-                if selected:
-                    selected_issues[section] = True
-
-            additional_feedback = st.text_area(
-                "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found...",
-                key="defs_additional"
-            )
-
-            submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
-            if submitted:
-                if not name.strip():
-                    st.warning("⚠️ Please provide your name.")
-                elif not selected_issues:
-                    st.warning(
-                        "⚠️ Please select at least one section that has definition issues.")
-                else:
-                    issues_list = list(selected_issues.keys())
-                    off_defs_text = " | ".join(issues_list)
-                    if submit_feedback(fb_choice, name=name, email=email, off_definitions=off_defs_text, 
-                                     additional_feedback=additional_feedback, account=current_account, 
-                                     industry=current_industry, problem_statement=current_problem):
-                        st.session_state.current_system_feedback_submitted = True
-                        st.success(
-                            "✅ Thank you! Your feedback has been submitted.")
-                        st.rerun()
-
-    # Feedback form 3: Suggestions
-    elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
-        with st.form("feedback_form_suggestions", clear_on_submit=True):
-            st.markdown(
-                "**Please share your suggestions for improvement:**")
-            
-            name = st.text_input("Your Name *", key="suggestions_name")
-            email = st.text_input("Your Email (optional)", key="suggestions_email")
-            suggestions = st.text_area(
-                "Your suggestions:",
-                placeholder="What features would you like to see improved or added?",
-                key="suggestions_text"
-            )
-            submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
-            if submitted:
-                if not name.strip():
-                    st.warning("⚠️ Please provide your name.")
-                elif not suggestions.strip():
-                    st.warning("⚠️ Please provide your suggestions.")
-                else:
-                    if submit_feedback(fb_choice, name=name, email=email, suggestions=suggestions,
+        # Feedback form 1: Positive feedback
+        if fb_choice == "I have read it, found it useful, thanks.":
+            with st.form("current_system_feedback_form_positive", clear_on_submit=True):
+                st.info(
+                    "Thank you for your positive feedback! Optional: Share your name and email.")
+                
+                name = st.text_input("Your Name (optional)", key="current_system_positive_name")
+                email = st.text_input("Your Email (optional)", key="current_system_positive_email")
+                
+                submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
+                if submitted:
+                    if submit_feedback(fb_choice, name=name, email=email, 
                                      account=current_account, industry=current_industry, 
                                      problem_statement=current_problem):
                         st.session_state.current_system_feedback_submitted = True
-                        st.success(
-                            "✅ Thank you! Your feedback has been submitted.")
+                        st.success("✅ Thank you! Your feedback has been recorded.")
                         st.rerun()
-else:
-    # Feedback already submitted - USING AGENT-SPECIFIC FLAG
-    st.success("✅ Thank you! Your feedback has been recorded.")
-    if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn", type="primary"):
-        st.session_state.current_system_feedback_submitted = False
-        st.rerun()
-   # ===============================
-# Download Section (Only show after feedback submission)
-# ===============================
 
-# USING AGENT-SPECIFIC FLAG for download section
-if st.session_state.get('current_system_feedback_submitted', False):
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="margin: 10px 0;">
-            <div class="section-title-box" style="padding: 0.5rem 1rem;">
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <h3 style="margin:0; color:white; font-weight:700; font-size:1.2rem; line-height:1.2;">
-                        📥 Download Current System Analysis
-                    </h3>
+        # Feedback form 2: Definitions off
+        elif fb_choice == "I have read it, found some definitions to be off.":
+            with st.form("current_system_feedback_form_defs", clear_on_submit=True):
+                st.markdown(
+                    "**Please select which sections have definitions that seem off:**")
+                
+                name = st.text_input("Your Name *", key="current_system_defs_name")
+                email = st.text_input("Your Email (optional)", key="current_system_defs_email")
+
+                # Section selection with better styling
+                st.markdown("### Select problematic sections:")
+                st.markdown("<div style='margin-bottom: 1rem;'>Select all that apply:</div>", unsafe_allow_html=True)
+                
+                sections_list = [
+                    "Core Business Problem",
+                    "Current System Overview", 
+                    "Key Technologies/Tools",
+                    "Roles/Stakeholders",
+                    "Inputs",
+                    "Outputs", 
+                    "Pain Points"
+                ]
+                
+                selected_issues = {}
+                for i, section in enumerate(sections_list):
+                    # Use a unique key for each checkbox
+                    selected = st.checkbox(
+                        section,
+                        key=f"current_system_def_section_{i}",
+                        help=f"Select if {section} has definition issues"
+                    )
+                    if selected:
+                        selected_issues[section] = True
+
+                additional_feedback = st.text_area(
+                    "Additional comments:",
+                    placeholder="Please provide more details about the definition issues you found...",
+                    key="current_system_defs_additional"
+                )
+
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                if submitted:
+                    if not name.strip():
+                        st.warning("⚠️ Please provide your name.")
+                    elif not selected_issues:
+                        st.warning(
+                            "⚠️ Please select at least one section that has definition issues.")
+                    else:
+                        issues_list = list(selected_issues.keys())
+                        off_defs_text = " | ".join(issues_list)
+                        if submit_feedback(fb_choice, name=name, email=email, off_definitions=off_defs_text, 
+                                         additional_feedback=additional_feedback, account=current_account, 
+                                         industry=current_industry, problem_statement=current_problem):
+                            st.session_state.current_system_feedback_submitted = True
+                            st.success("✅ Thank you! Your feedback has been recorded.")
+                            st.rerun()
+
+        # Feedback form 3: Suggestions
+        elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
+            with st.form("current_system_feedback_form_suggestions", clear_on_submit=True):
+                st.markdown(
+                    "**Please share your suggestions for improvement:**")
+                
+                name = st.text_input("Your Name *", key="current_system_suggestions_name")
+                email = st.text_input("Your Email (optional)", key="current_system_suggestions_email")
+                suggestions = st.text_area(
+                    "Your suggestions:",
+                    placeholder="What features would you like to see improved or added?",
+                    key="current_system_suggestions_text"
+                )
+                submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
+                if submitted:
+                    if not name.strip():
+                        st.warning("⚠️ Please provide your name.")
+                    elif not suggestions.strip():
+                        st.warning("⚠️ Please provide your suggestions.")
+                    else:
+                        if submit_feedback(fb_choice, name=name, email=email, suggestions=suggestions,
+                                         account=current_account, industry=current_industry, 
+                                         problem_statement=current_problem):
+                            st.session_state.current_system_feedback_submitted = True
+                            st.success("✅ Thank you! Your feedback has been recorded.")
+                            st.rerun()
+    else:
+        # Feedback already submitted - USING AGENT-SPECIFIC FLAG
+        st.success("✅ Thank you! Your feedback has been recorded.")
+        if st.button("📝 Submit Additional Feedback", key="current_system_reopen_feedback_btn", type="primary"):
+            st.session_state.current_system_feedback_submitted = False
+            st.rerun()
+
+    # ===============================
+    # Download Section (Only show after feedback submission - AGENT-SPECIFIC)
+    # ===============================
+
+    # USING AGENT-SPECIFIC FLAG for download section
+    if st.session_state.get('current_system_feedback_submitted', False):
+        st.markdown("---")
+        st.markdown(
+            """
+            <div style="margin: 10px 0;">
+                <div class="section-title-box" style="padding: 0.5rem 1rem;">
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <h3 style="margin:0; color:white; font-weight:700; font-size:1.2rem; line-height:1.2;">
+                            📥 Download Current System Analysis
+                        </h3>
+                    </div>
                 </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    current_system_text = st.session_state.get("current_system_data", "")
-    if current_system_text and not current_system_text.startswith("API Error") and not current_system_text.startswith("Error:"):
-        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"current_system_{st.session_state.saved_account.replace(' ', '_')}_{ts}.txt"
-        download_content = f"""Current System Analysis
-Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Company: {st.session_state.saved_account}
-Industry: {st.session_state.saved_industry}
-Problem: {st.session_state.saved_problem}
-
-{current_system_text}
-
----
-Generated by Current System Analysis Tool
-"""
-        st.download_button(
-            "⬇️ Download Current System Analysis as Text File",
-            data=download_content,
-            file_name=filename,
-            mime="text/plain",
-            use_container_width=True
+            """,
+            unsafe_allow_html=True,
         )
-    else:
-        st.info(
-            "No current system analysis available for download. Please complete the analysis first.")
+
+        current_system_text = st.session_state.get("current_system_data", "")
+        if current_system_text and not current_system_text.startswith("API Error") and not current_system_text.startswith("Error:"):
+            ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"current_system_{st.session_state.saved_account.replace(' ', '_')}_{ts}.txt"
+            download_content = f"""Current System Analysis
+    Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    Company: {st.session_state.saved_account}
+    Industry: {st.session_state.saved_industry}
+    Problem: {st.session_state.saved_problem}
+
+    {current_system_text}
+
+    ---
+    Generated by Current System Analysis Tool
+    """
+            st.download_button(
+                "⬇️ Download Current System Analysis as Text File",
+                data=download_content,
+                file_name=filename,
+                mime="text/plain",
+                use_container_width=True
+            )
+        else:
+            st.info(
+                "No current system analysis available for download. Please complete the analysis first.")
+
 # =========================================
 # ⬅️ BACK BUTTON
 # =========================================
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
-
     st.switch_page("Welcome_Agent.py")
-
