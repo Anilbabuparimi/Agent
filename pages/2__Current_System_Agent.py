@@ -743,50 +743,44 @@ if st.session_state.current_system_extracted:
     # UPDATED MESSAGE - Agent-specific
     st.markdown("Please share your thoughts or suggestions after reviewing the **current system analysis**.")
 
-    # Get account and industry from session state
-    current_account = st.session_state.get("current_account", "") or st.session_state.get("saved_account", "")
-    current_industry = st.session_state.get("current_industry", "") or st.session_state.get("saved_industry", "")
-    current_problem = st.session_state.get("current_problem", "") or st.session_state.get("saved_problem", "")
+    # Get employee ID from login page
+    def get_user_id():
+        if 'employee_id' in st.session_state and st.session_state.employee_id:
+            return st.session_state.employee_id
+        
+        possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
+        for key in possible_keys:
+            if key in st.session_state and st.session_state[key]:
+                return st.session_state[key]
+        
+        try:
+            shared_data = get_shared_data()
+            if shared_data and 'user_id' in shared_data:
+                return shared_data['user_id']
+            if shared_data and 'employee_id' in shared_data:
+                return shared_data['employee_id']
+        except:
+            pass
+        
+        return 'Not Available'
 
-    # Dark mode compatible CSS
-    st.markdown("""
-        <style>
-        /* Mu Sigma red button styling */
-        .stButton>button {
-            background-color: #8B1E1E !important;
-            color: white !important;
-            border: none !important;
-            padding: 0.5rem 1rem !important;
-            border-radius: 4px !important;
-            font-weight: 600 !important;
-        }
-        .stButton>button:hover {
-            background-color: #6B1515 !important;
-            color: white !important;
-        }
-        
-        /* Dark mode compatibility for form elements */
-        .stTextInput input, .stTextArea textarea {
-            background-color: transparent !important;
-            color: inherit !important;
-        }
-        
-        /* Checkbox labels */
-        .stCheckbox label {
-            color: inherit !important;
-        }
-        
-        /* Radio button labels */  
-        .stRadio label {
-            color: inherit !important;
-        }
-        
-        /* Form container */
-        .stForm {
-            background-color: transparent !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Get the actual user ID
+    user_id = get_user_id()
+
+    # Updated submit_feedback function call
+    def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
+        """Wrapper for submit_feedback to handle employee ID"""
+        return submit_feedback(
+            feedback_type=feedback_type,
+            name=user_id,  # Map user_id to name parameter
+            email="",      # Empty email
+            off_definitions=off_definitions,
+            suggestions=suggestions,
+            additional_feedback=additional_feedback,
+            account="",    # Empty account
+            industry="",   # Empty industry
+            problem_statement=""  # Empty problem statement
+        )
 
     # Show feedback section if not submitted - USING AGENT-SPECIFIC FLAG
     if not st.session_state.get('current_system_feedback_submitted', False):
@@ -798,43 +792,36 @@ if st.session_state.current_system_extracted:
                 "The widget seems interesting, but I have some suggestions on the features.",
             ],
             index=None,
-            key="current_system_feedback_radio",  # Agent-specific key
+            key="current_system_feedback_radio",
         )
 
         if fb_choice:
             st.session_state.current_system_feedback_option = fb_choice
 
-        # Feedback form 1: Positive feedback
+        # Feedback form 1: Positive feedback - SIMPLIFIED
         if fb_choice == "I have read it, found it useful, thanks.":
             with st.form("current_system_feedback_form_positive", clear_on_submit=True):
-                st.info(
-                    "Thank you for your positive feedback! Optional: Share your name and email.")
-                
-                name = st.text_input("Your Name (optional)", key="current_system_positive_name")
-                email = st.text_input("Your Email (optional)", key="current_system_positive_email")
+                st.info("Thank you for your positive feedback!")
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
                 
                 submitted = st.form_submit_button("📨 Submit Positive Feedback", type="primary")
                 if submitted:
-                    if submit_feedback(fb_choice, name=name, email=email, 
-                                     account=current_account, industry=current_industry, 
-                                     problem_statement=current_problem):
+                    if submit_feedback_wrapper(fb_choice, user_id=user_id):
                         st.session_state.current_system_feedback_submitted = True
                         st.success("✅ Thank you! Your feedback has been recorded.")
                         st.rerun()
 
-        # Feedback form 2: Definitions off
+        # Feedback form 2: Definitions off - SIMPLIFIED
         elif fb_choice == "I have read it, found some definitions to be off.":
             with st.form("current_system_feedback_form_defs", clear_on_submit=True):
-                st.markdown(
-                    "**Please select which sections have definitions that seem off:**")
+                st.markdown("**Please select which sections have definitions that seem off:**")
                 
-                name = st.text_input("Your Name *", key="current_system_defs_name")
-                email = st.text_input("Your Email (optional)", key="current_system_defs_email")
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
 
-                # Section selection with better styling
+                # Section selection
                 st.markdown("### Select problematic sections:")
-                st.markdown("<div style='margin-bottom: 1rem;'>Select all that apply:</div>", unsafe_allow_html=True)
-                
                 sections_list = [
                     "Core Business Problem",
                     "Current System Overview", 
@@ -847,7 +834,6 @@ if st.session_state.current_system_extracted:
                 
                 selected_issues = {}
                 for i, section in enumerate(sections_list):
-                    # Use a unique key for each checkbox
                     selected = st.checkbox(
                         section,
                         key=f"current_system_def_section_{i}",
@@ -864,29 +850,25 @@ if st.session_state.current_system_extracted:
 
                 submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
                 if submitted:
-                    if not name.strip():
-                        st.warning("⚠️ Please provide your name.")
-                    elif not selected_issues:
-                        st.warning(
-                            "⚠️ Please select at least one section that has definition issues.")
+                    if not selected_issues:
+                        st.warning("⚠️ Please select at least one section that has definition issues.")
                     else:
                         issues_list = list(selected_issues.keys())
                         off_defs_text = " | ".join(issues_list)
-                        if submit_feedback(fb_choice, name=name, email=email, off_definitions=off_defs_text, 
-                                         additional_feedback=additional_feedback, account=current_account, 
-                                         industry=current_industry, problem_statement=current_problem):
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, off_definitions=off_defs_text, 
+                                                 additional_feedback=additional_feedback):
                             st.session_state.current_system_feedback_submitted = True
                             st.success("✅ Thank you! Your feedback has been recorded.")
                             st.rerun()
 
-        # Feedback form 3: Suggestions
+        # Feedback form 3: Suggestions - SIMPLIFIED
         elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
             with st.form("current_system_feedback_form_suggestions", clear_on_submit=True):
-                st.markdown(
-                    "**Please share your suggestions for improvement:**")
+                st.markdown("**Please share your suggestions for improvement:**")
                 
-                name = st.text_input("Your Name *", key="current_system_suggestions_name")
-                email = st.text_input("Your Email (optional)", key="current_system_suggestions_email")
+                # ONLY EMPLOYEE ID - NO OTHER FIELDS
+                st.markdown(f'**Employee ID:** {user_id}')
+                
                 suggestions = st.text_area(
                     "Your suggestions:",
                     placeholder="What features would you like to see improved or added?",
@@ -894,19 +876,15 @@ if st.session_state.current_system_extracted:
                 )
                 submitted = st.form_submit_button("📨 Submit Feedback", type="primary")
                 if submitted:
-                    if not name.strip():
-                        st.warning("⚠️ Please provide your name.")
-                    elif not suggestions.strip():
+                    if not suggestions.strip():
                         st.warning("⚠️ Please provide your suggestions.")
                     else:
-                        if submit_feedback(fb_choice, name=name, email=email, suggestions=suggestions,
-                                         account=current_account, industry=current_industry, 
-                                         problem_statement=current_problem):
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
                             st.session_state.current_system_feedback_submitted = True
                             st.success("✅ Thank you! Your feedback has been recorded.")
                             st.rerun()
     else:
-        # Feedback already submitted - USING AGENT-SPECIFIC FLAG
+        # Feedback already submitted
         st.success("✅ Thank you! Your feedback has been recorded.")
         if st.button("📝 Submit Additional Feedback", key="current_system_reopen_feedback_btn", type="primary"):
             st.session_state.current_system_feedback_submitted = False
@@ -966,4 +944,5 @@ if st.session_state.current_system_extracted:
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
 
