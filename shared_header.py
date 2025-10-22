@@ -1261,6 +1261,99 @@ def render_unified_business_inputs(page_key_prefix: str = "global", show_titles:
         st.session_state.business_industry,
         st.session_state.business_problem,
     )
+# Add this to your shared_header.py after the existing functions
+
+# Dimension mapping
+DIMENSION_QUESTIONS = {
+    "Volatility": ["Q1", "Q2", "Q3"],
+    "Ambiguity": ["Q4", "Q5", "Q6"], 
+    "Interconnectedness": ["Q7", "Q8", "Q9"],
+    "Uncertainty": ["Q10", "Q11", "Q12"]
+}
+
+def initialize_scoring_system():
+    """Initialize the scoring system for all agents"""
+    if 'agent_scores' not in st.session_state:
+        st.session_state.agent_scores = {
+            'volatility': None,      # Q1-Q3
+            'ambiguity': None,       # Q4-Q6  
+            'interconnectedness': None,  # Q7-Q9
+            'uncertainty': None      # Q10-Q12
+        }
+    
+    if 'agents_completed' not in st.session_state:
+        st.session_state.agents_completed = {
+            'volatility': False,
+            'ambiguity': False, 
+            'interconnectedness': False,
+            'uncertainty': False
+        }
+
+def mark_agent_completed(agent_name, scores_dict=None):
+    """Mark an agent as completed and store its scores"""
+    initialize_scoring_system()
+    
+    if agent_name in st.session_state.agents_completed:
+        st.session_state.agents_completed[agent_name] = True
+    
+    if scores_dict and isinstance(scores_dict, dict):
+        for question, score in scores_dict.items():
+            # Store individual question scores
+            if f'{agent_name}_scores' not in st.session_state:
+                st.session_state[f'{agent_name}_scores'] = {}
+            st.session_state[f'{agent_name}_scores'][question] = score
+            
+            # Also update dimension score if all questions are available
+            dimension_questions = DIMENSION_QUESTIONS.get(agent_name.title(), [])
+            if dimension_questions and all(q in st.session_state[f'{agent_name}_scores'] for q in dimension_questions):
+                dimension_scores = [st.session_state[f'{agent_name}_scores'][q] for q in dimension_questions]
+                st.session_state.agent_scores[agent_name] = sum(dimension_scores) / len(dimension_scores)
+
+def all_agents_completed():
+    """Check if all 4 dimension agents have been completed"""
+    initialize_scoring_system()
+    return all(st.session_state.agents_completed.values())
+
+def get_overall_hardness_score():
+    """Calculate overall hardness score from completed dimensions"""
+    initialize_scoring_system()
+    
+    completed_scores = [
+        score for dimension, score in st.session_state.agent_scores.items() 
+        if st.session_state.agents_completed[dimension] and score is not None
+    ]
+    
+    if not completed_scores:
+        return None
+    
+    return sum(completed_scores) / len(completed_scores)
+
+def get_agent_progress():
+    """Get completion progress for all dimension agents"""
+    initialize_scoring_system()
+    
+    completed_count = sum(st.session_state.agents_completed.values())
+    total_count = len(st.session_state.agents_completed)
+    
+    return {
+        'completed': completed_count,
+        'total': total_count,
+        'progress': completed_count / total_count if total_count > 0 else 0,
+        'all_completed': all_agents_completed(),
+        'scores': st.session_state.agent_scores.copy()
+    }
+
+def get_all_question_scores():
+    """Get all individual question scores across all dimensions"""
+    initialize_scoring_system()
+    
+    all_scores = {}
+    for dimension in DIMENSION_QUESTIONS.keys():
+        dimension_key = dimension.lower()
+        if f'{dimension_key}_scores' in st.session_state:
+            all_scores.update(st.session_state[f'{dimension_key}_scores'])
+    
+    return all_scores
 
 def render_admin_panel(admin_password="admin123"):
     """
@@ -1357,7 +1450,6 @@ def render_admin_panel(admin_password="admin123"):
                             "Current System Agent",
                             "Volatility Agent",
                             "Ambiguity Agent",
-                            "Complexity Agent",
                             "Interconnectedness Agent",
                             "Uncertainty Agent",
                             "Hardness Agent"
@@ -1443,6 +1535,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
