@@ -1,4 +1,4 @@
-update current_system also
+#update current_system also
 import streamlit as st
 from shared_header import (
     render_header,
@@ -966,3 +966,4 @@ if st.session_state.current_system_extracted:
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
+
