@@ -624,6 +624,11 @@ def render_header(
         color: #ffffff !important;
     }}
     
+    /* FIX: Ensure selected option text is visible */
+    body[data-theme="dark"] .stSelectbox [data-baseweb="select"] span {{
+        color: #ffffff !important;
+    }}
+    
     /* Consistent text input backgrounds in dark mode */
     body[data-theme="dark"] .stTextInput input,
     body[data-theme="dark"] .stTextArea textarea {{
@@ -739,6 +744,41 @@ def render_header(
 
     body[data-theme="dark"] .stSelectbox [data-baseweb="select"] > div:before {{
         color: #ffffff !important;
+    }}
+
+    /* NEW: Style for empty ID and submit button */
+    body[data-theme="dark"] .empty-id-text {{
+        color: #ff6b6b !important;
+        background-color: rgba(255, 107, 107, 0.1) !important;
+        padding: 8px 12px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 107, 107, 0.3) !important;
+        font-weight: 500 !important;
+    }}
+
+    /* Style submit button to match other buttons */
+    body[data-theme="dark"] .stButton button {{
+        background-color: #8b1e1e !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 4px !important;
+        font-weight: 600 !important;
+    }}
+
+    body[data-theme="dark"] .stButton button:hover {{
+        background-color: #a52a2a !important;
+        color: white !important;
+    }}
+
+    /* Success message styling */
+    body[data-theme="dark"] .feedback-success {{
+        background-color: rgba(34, 197, 94, 0.1) !important;
+        color: #22c55e !important;
+        padding: 12px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(34, 197, 94, 0.3) !important;
+        margin: 10px 0 !important;
     }}
 
     /* ========================================
@@ -1403,6 +1443,7 @@ def render_admin_panel(admin_password="admin123"):
             st.error("❌ Invalid password. Access denied.")
         else:
             st.info("💡 Please enter the admin password to access reports.")
+
 
 
 
