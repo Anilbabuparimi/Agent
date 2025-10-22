@@ -1,3 +1,4 @@
+update current_system also
 import streamlit as st
 from shared_header import (
     render_header,
@@ -28,7 +29,7 @@ st.set_page_config(
 )
 
 # =========================================
-# ⚙️ SESSION INITIALIZATION - ADD ADMIN STATES
+# ⚙️ SESSION INITIALIZATION - ADD ADMIN STATES AND AGENT-SPECIFIC FEEDBACK
 # =========================================
 session_defaults = {
     'dark_mode': False,
@@ -44,6 +45,8 @@ session_defaults = {
     'current_page': '',
     'show_admin_panel': False,
     'admin_view_selected': False,
+    # AGENT-SPECIFIC FEEDBACK TRACKING
+    'current_system_feedback_submitted': False,  # Agent-specific feedback flag
 }
 for key, val in session_defaults.items():
     if key not in st.session_state:
@@ -463,7 +466,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
                 [st.session_state.feedback_data, new_entry], ignore_index=True)
             st.info("📝 Feedback saved to session (cloud mode)")
 
-        st.session_state.feedback_submitted = True
+        # Set agent-specific feedback flag instead of global flag
+        st.session_state.current_system_feedback_submitted = True
         return True
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
@@ -824,8 +828,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Show feedback section if not submitted
-if not st.session_state.get('feedback_submitted', False):
+# Show feedback section if not submitted - USING AGENT-SPECIFIC FLAG
+if not st.session_state.get('current_system_feedback_submitted', False):
     fb_choice = st.radio(
         "Select your feedback type:",
         options=[
@@ -854,7 +858,7 @@ if not st.session_state.get('feedback_submitted', False):
                 if submit_feedback(fb_choice, name=name, email=email, 
                                  account=current_account, industry=current_industry, 
                                  problem_statement=current_problem):
-                    st.session_state.feedback_submitted = True
+                    st.session_state.current_system_feedback_submitted = True
                     st.success(
                         "✅ Thank you! Your positive feedback has been recorded.")
                     st.rerun()
@@ -912,7 +916,7 @@ if not st.session_state.get('feedback_submitted', False):
                     if submit_feedback(fb_choice, name=name, email=email, off_definitions=off_defs_text, 
                                      additional_feedback=additional_feedback, account=current_account, 
                                      industry=current_industry, problem_statement=current_problem):
-                        st.session_state.feedback_submitted = True
+                        st.session_state.current_system_feedback_submitted = True
                         st.success(
                             "✅ Thank you! Your feedback has been submitted.")
                         st.rerun()
@@ -940,21 +944,22 @@ if not st.session_state.get('feedback_submitted', False):
                     if submit_feedback(fb_choice, name=name, email=email, suggestions=suggestions,
                                      account=current_account, industry=current_industry, 
                                      problem_statement=current_problem):
-                        st.session_state.feedback_submitted = True
+                        st.session_state.current_system_feedback_submitted = True
                         st.success(
                             "✅ Thank you! Your feedback has been submitted.")
                         st.rerun()
 else:
-    # Feedback already submitted
+    # Feedback already submitted - USING AGENT-SPECIFIC FLAG
     st.success("✅ Thank you! Your feedback has been recorded.")
     if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn", type="primary"):
-        st.session_state.feedback_submitted = False
+        st.session_state.current_system_feedback_submitted = False
         st.rerun()
    # ===============================
 # Download Section (Only show after feedback submission)
 # ===============================
 
-if st.session_state.get('feedback_submitted', False):
+# USING AGENT-SPECIFIC FLAG for download section
+if st.session_state.get('current_system_feedback_submitted', False):
     st.markdown("---")
     st.markdown(
         """
@@ -1003,5 +1008,3 @@ st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
 
     st.switch_page("Welcome_Agent.py")
-
-
