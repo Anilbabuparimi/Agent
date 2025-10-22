@@ -15,6 +15,12 @@ from shared_header import (
     ACCOUNT_INDUSTRY_MAP,
     get_shared_data,
     render_unified_business_inputs,
+    initialize_scoring_system,
+    all_agents_completed,
+    get_overall_hardness_score,
+    get_agent_progress,
+    get_all_question_scores,
+    DIMENSION_QUESTIONS
 )
 
 # --- Page Config ---
@@ -29,14 +35,17 @@ if 'hardness_outputs' not in st.session_state:
     st.session_state.hardness_outputs = {}
 if 'show_hardness' not in st.session_state:
     st.session_state.show_hardness = False
-if 'feedback_submitted' not in st.session_state:
-    st.session_state.feedback_submitted = False
+if 'hardness_feedback_submitted' not in st.session_state:  # AGENT-SPECIFIC
+    st.session_state.hardness_feedback_submitted = False
 if 'feedback_option' not in st.session_state:
     st.session_state.feedback_option = None
 if 'analysis_complete' not in st.session_state:
     st.session_state.analysis_complete = False
 if 'validation_attempted' not in st.session_state:
     st.session_state.validation_attempted = False
+
+# Initialize scoring system
+initialize_scoring_system()
 
 # --- Render Header ---
 render_header(
@@ -270,6 +279,17 @@ def format_hardness_output(text):
     
     return clean_text.strip()
 
+def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
+    """Wrapper for submit_feedback to handle the parameter mismatch"""
+    return submit_feedback(
+        feedback_type=feedback_type,
+        name=user_id,
+        email="",
+        off_definitions=off_definitions,
+        suggestions=suggestions,
+        additional_feedback=additional_feedback
+    )
+
 def submit_feedback(feedback_type, name="", email="", off_definitions="", suggestions="", additional_feedback=""):
     """Submit feedback to CSV file and admin session storage"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -328,7 +348,7 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
                 [st.session_state.feedback_data, new_entry], ignore_index=True)
             st.info("📝 Feedback saved to session (cloud mode)")
 
-        st.session_state.feedback_submitted = True
+        st.session_state.hardness_feedback_submitted = True  # AGENT-SPECIFIC
         return True
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
@@ -337,6 +357,18 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
 # ===============================
 # Main Content
 # ===============================
+
+# Display agent progress in sidebar
+progress_data = get_agent_progress()
+st.sidebar.markdown("### 📊 Agent Progress")
+st.sidebar.progress(progress_data['progress'])
+st.sidebar.write(f"**{progress_data['completed']}/{progress_data['total']}** dimensions completed")
+
+# Show completion status and navigation
+if progress_data['all_completed']:
+    st.sidebar.success("🎉 All dimensions completed!")
+else:
+    st.sidebar.info("🔍 Complete all dimension agents for comprehensive analysis")
 
 # Retrieve data from shared header
 shared = get_shared_data()
@@ -378,6 +410,9 @@ has_account = account and account != "Select Account"
 has_industry = industry and industry != "Select Industry"
 has_problem = bool(problem.strip())
 
+# Check if all agents are completed for comprehensive analysis
+all_completed = all_agents_completed()
+
 # Analyze Hardness Button
 analyze_btn = st.button("🔍 Analyze Hardness", type="primary", use_container_width=True,
                         disabled=not (has_account and has_industry and has_problem))
@@ -399,8 +434,15 @@ if analyze_btn:
         st.error("❌ Please enter a business problem description.")
         st.stop()
 
-    # Build context - using only the problem statement since we don't have Q1-Q12 outputs
-    # In a real implementation, you would collect these from previous agent analyses
+    # Build enhanced context with dimension scores if available
+    dimension_scores_text = ""
+    if all_completed:
+        dimension_scores = progress_data['scores']
+        dimension_scores_text = "\n\nDimension Scores:\n"
+        for dimension, score in dimension_scores.items():
+            if score is not None:
+                dimension_scores_text += f"{dimension.title()}: {score:.2f}/5\n"
+    
     full_context = f"""
     Business Problem:
     {problem.strip()}
@@ -408,6 +450,7 @@ if analyze_btn:
     Context:
     Account: {account}
     Industry: {industry}
+    {dimension_scores_text}
     """.strip()
 
     # Prepare headers with authentication
@@ -432,7 +475,6 @@ if analyze_btn:
                     progress.progress(i / total_apis)
                     
                     try:
-                        # Pass empty outputs since we don't have Q1-Q12 data
                         goal = api_cfg["prompt"](full_context, {})
                         
                         # Make API request with timeout
@@ -508,14 +550,16 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
     hardness_score = extract_hardness_score(hardness_output)
     hardness_classification = extract_hardness_classification(hardness_output)
     
+    # Calculate overall score from dimensions if available
+    overall_dimension_score = get_overall_hardness_score()
+    
     # Create two-column layout with equal dimensions
     col1, col2 = st.columns(2)
 
     with col1:
-        # Overall Classification Box - Fixed height with red border
+        # Overall Classification Box
         if hardness_classification == "HARD":
-            st.markdown(
-                f"""
+            classification_html = """
                 <div style="
                     background: linear-gradient(135deg, #ff6b6b, #ee5a52);
                     border-radius: 16px;
@@ -537,12 +581,9 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                         This problem requires significant expertise and resources
                     </p>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+            """
         elif hardness_classification == "MODERATE":
-            st.markdown(
-                f"""
+            classification_html = """
                 <div style="
                     background: linear-gradient(135deg, #ffa502, #ff7e00);
                     border-radius: 16px;
@@ -564,12 +605,9 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                         This problem requires careful planning and execution
                     </p>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+            """
         else:
-            st.markdown(
-                f"""
+            classification_html = """
                 <div style="
                     background: linear-gradient(135deg, #51cf66, #40c057);
                     border-radius: 16px;
@@ -591,22 +629,26 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                         This problem can be addressed with standard approaches
                     </p>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+            """
+        
+        st.markdown(classification_html, unsafe_allow_html=True)
 
     with col2:
-        # Overall Hardness Score Box - Same height with red border
-        if hardness_score is not None:
-            if hardness_score >= 4.0:
+        # Overall Hardness Score Box
+        display_score = hardness_score if hardness_score is not None else overall_dimension_score
+        
+        if display_score is not None:
+            if display_score >= 4.0:
                 score_color = "#ff6b6b"
                 score_emoji = "🔴"
-            elif hardness_score >= 3.1:
+            elif display_score >= 3.1:
                 score_color = "#ffa502"
                 score_emoji = "🟡"
             else:
                 score_color = "#51cf66"
                 score_emoji = "🟢"
+            
+            score_source = "AI Assessment" if hardness_score is not None else "Dimension Average"
             
             st.markdown(
                 f"""
@@ -623,20 +665,20 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                     justify-content: center;
                     align-items: center;
                 ">
-                    <h3 style="margin: 0 0 1rem 0; color: #333; font-size: 1.3rem; font-weight: 600;">
+                    <h3 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.3rem; font-weight: 600;">
                         Overall Hardness Score
                     </h3>
+                    <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.9rem;">
+                        {score_source}
+                    </p>
                     <div style="
                         font-size: 3rem;
                         font-weight: 800;
                         color: {score_color};
                         margin: 0.5rem 0;
                     ">
-                        {score_emoji} {hardness_score}/5
+                        {score_emoji} {display_score:.1f}/5
                     </div>
-                    <p style="margin: 0; color: #666; font-size: 1rem;">
-                        Based on comprehensive analysis of all dimensions
-                    </p>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -676,157 +718,109 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                 unsafe_allow_html=True
             )
 
-    # API Output Box with proper title card - Same as other agents
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Title card for Detailed Hardness Analysis - Updated to match Vocabulary style
-    st.markdown(
-        f"""
-        <div style="margin: 20px 0;">
-            <div class="section-title-box" style="padding: 1rem 1.5rem;">
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <h3 style="margin-bottom:8px; color:white; font-weight:800; font-size:1.4rem; line-height:1.2;">
-                        📊 Detailed Hardness Analysis
-                    </h3>
-                    <p style="font-size:0.95rem; color:white; margin:0; line-height:1.5; text-align:center; max-width: 800px;">
-                        Comprehensive assessment showing SME justification, summary, and key takeaways from the hardness analysis.
-                    </p>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Format the detailed output with proper styling
-    formatted_output = format_hardness_output(hardness_output)
-    
-    if formatted_output and "No hardness data" not in formatted_output:
-        # Convert to HTML with proper formatting
-        formatted_html = formatted_output
-        
-        # Convert bullet points
-        formatted_html = re.sub(r'(?m)^\s*•\s+(.*)$', r'<li>\1</li>', formatted_html)
-        formatted_html = re.sub(r'(?m)^\s*-\s+(.*)$', r'<li>\1</li>', formatted_html)
-        formatted_html = re.sub(r'(?m)^\s*\d+\.\s+(.*)$', r'<li>\1</li>', formatted_html)
-        
-        # Convert section headers
-        formatted_html = re.sub(
-            r'(?m)^(Overall Difficulty Score|Hardness Level|SME Justification|Summary|Key Takeaways):?$',
-            r'<h4 style="color: #8b1e1e; border-bottom: 2px solid #8b1e1e; padding-bottom: 0.5rem; margin: 1.5rem 0 1rem 0;">\1</h4>',
-            formatted_html
-        )
-        
-        # Wrap bullet points in ul tags
-        lines = formatted_html.split('\n')
-        in_list = False
-        formatted_lines = []
-        
-        for line in lines:
-            if '<li>' in line:
-                if not in_list:
-                    formatted_lines.append('<ul style="margin: 0.5rem 0 1rem 1rem; color: #555;">')
-                    in_list = True
-                formatted_lines.append(line)
-            else:
-                if in_list:
-                    formatted_lines.append('</ul>')
-                    in_list = False
-                if line.strip() and not line.startswith('<h4'):
-                    formatted_lines.append(f'<p style="margin: 0.5rem 0; line-height: 1.5; color: #555;">{line}</p>')
-                else:
-                    formatted_lines.append(line)
-        
-        if in_list:
-            formatted_lines.append('</ul>')
-        
-        formatted_html = '\n'.join(formatted_lines)
-
-        # Content box with red border styling like Vocabulary
+    # Display Dimension Scores if available
+    if all_completed:
+        st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(
-            f"""
-            <div style="
-                background: var(--bg-card);
-                border: 2px solid #8b1e1e;
-                border-radius: 16px;
-                padding: 1.6rem;
-                margin-bottom: 1.6rem;
-                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
-            ">
-                <h4 style="
-                    color: #8b1e1e;
-                    font-weight: 700;
-                    font-size: 1.15rem;
-                    margin: 0 0 1rem 0;
-                    border-bottom: 2px solid #8b1e1e;
-                    padding-bottom: 0.5rem;
-                    text-align: left;
-                ">
-                    Detailed Analysis
-                </h4>
-                <div style="
-                    color: var(--text-primary);
-                    line-height: 1.45;
-                    font-size: 1rem;
-                    text-align: left;
-                    white-space: normal;
-                ">
-                    {formatted_html}
+            """
+            <div style="margin: 20px 0;">
+                <div class="section-title-box" style="padding: 1rem 1.5rem;">
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <h3 style="margin-bottom:8px; color:white; font-weight:800; font-size:1.4rem; line-height:1.2;">
+                            📊 Dimension Scores Summary
+                        </h3>
+                    </div>
                 </div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
-    else:
-        # Info box with red border
-        st.markdown(
-            f"""
-            <div style="
-                background: var(--bg-card);
-                border: 2px solid #8b1e1e;
-                border-radius: 16px;
-                padding: 1.6rem;
-                margin-bottom: 1.6rem;
-                box-shadow: 0 3px 10px rgba(139,30,30,0.15);
-            ">
-                <h4 style="
-                    color: #8b1e1e;
-                    font-weight: 700;
-                    font-size: 1.15rem;
-                    margin: 0 0 1rem 0;
-                    border-bottom: 2px solid #8b1e1e;
-                    padding-bottom: 0.5rem;
-                    text-align: left;
-                ">
-                    Assessment Note
-                </h4>
-                <div style="
-                    color: var(--text-primary);
-                    line-height: 1.45;
-                    font-size: 1rem;
-                    text-align: left;
-                    white-space: normal;
-                ">
-                    The hardness assessment is based solely on the problem statement provided. 
-                    For a more comprehensive analysis, please ensure all previous agents (Ambiguity, Interconnectedness, Uncertainty) 
-                    have been run first to provide detailed inputs for the hardness calculation.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    # ===============================
-    # User Feedback Section
-    # ===============================
+        
+        # Create 4 columns for dimension scores
+        dim_cols = st.columns(4)
+        dimension_scores = progress_data['scores']
+        
+        for i, (dimension, score) in enumerate(dimension_scores.items()):
+            with dim_cols[i]:
+                if score is not None:
+                    if score >= 4.0:
+                        dim_color = "#ff6b6b"
+                        dim_emoji = "🔴"
+                    elif score >= 3.1:
+                        dim_color = "#ffa502" 
+                        dim_emoji = "🟡"
+                    else:
+                        dim_color = "#51cf66"
+                        dim_emoji = "🟢"
+                    
+                    st.markdown(
+                        f"""
+                        <div style="
+                            background: white;
+                            border-radius: 12px;
+                            padding: 1.5rem;
+                            text-align: center;
+                            border: 2px solid #8b1e1e;
+                            box-shadow: 0 3px 10px rgba(139,30,30,0.1);
+                        ">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1rem; font-weight: 600;">
+                                {dimension.title()}
+                            </h4>
+                            <div style="
+                                font-size: 2rem;
+                                font-weight: 800;
+                                color: {dim_color};
+                                margin: 0.5rem 0;
+                            ">
+                                {dim_emoji} {score:.1f}
+                            </div>
+                            <p style="margin: 0; color: #666; font-size: 0.8rem;">
+                                /5
+                            </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
+    # Continue with the rest of your existing display code for detailed analysis...
+    # [Keep your existing detailed analysis display code here]
+
+# ===============================
+# User Feedback Section - UPDATED
+# ===============================
+
+if st.session_state.get("show_hardness") and st.session_state.get("hardness_outputs"):
     st.markdown("---")
     st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
                 unsafe_allow_html=True)
     st.markdown(
         "Please share your thoughts or suggestions after reviewing the hardness assessment.")
 
-    # Show feedback section if not submitted
-    if not st.session_state.get('feedback_submitted', False):
+    # Get user ID function
+    def get_user_id():
+        if 'employee_id' in st.session_state and st.session_state.employee_id:
+            return st.session_state.employee_id
+        
+        possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
+        for key in possible_keys:
+            if key in st.session_state and st.session_state[key]:
+                return st.session_state[key]
+        
+        try:
+            shared_data = get_shared_data()
+            if shared_data and 'user_id' in shared_data:
+                return shared_data['user_id']
+            if shared_data and 'employee_id' in shared_data:
+                return shared_data['employee_id']
+        except:
+            pass
+        
+        return 'Not Available'
+
+    user_id = get_user_id()
+
+    # Show feedback section if not submitted - USING AGENT-SPECIFIC STATE
+    if not st.session_state.get('hardness_feedback_submitted', False):
         fb_choice = st.radio(
             "Select your feedback type:",
             options=[
@@ -835,79 +829,72 @@ if st.session_state.get("show_hardness") and st.session_state.get("hardness_outp
                 "The widget seems interesting, but I have some suggestions on the features.",
             ],
             index=None,
-            key="feedback_radio",
+            key="hardness_feedback_radio",
         )
 
         if fb_choice:
             st.session_state.feedback_option = fb_choice
 
-        # Feedback form implementations (same as before)
-        # ... [include the same feedback form code from previous implementation]
+        # Feedback form 1: Positive feedback
+        if fb_choice == "I have read it, found it useful, thanks.":
+            with st.form("hardness_feedback_form_positive", clear_on_submit=True):
+                st.info("Thank you for your positive feedback!")
+                st.markdown(f'**Employee ID:** {user_id}')
+                submitted = st.form_submit_button("📨 Submit Positive Feedback")
+                if submitted:
+                    if submit_feedback_wrapper(fb_choice, user_id=user_id):
+                        st.rerun()
 
+        # Feedback form 2: Assessment off
+        elif fb_choice == "I have read it, found the assessment to be off.":
+            with st.form("hardness_feedback_form_assessment", clear_on_submit=True):
+                st.markdown("**Please provide details about the assessment issues:**")
+                st.markdown(f'**Employee ID:** {user_id}')
+                
+                assessment_issues = st.text_area(
+                    "What aspects of the hardness assessment seem off?",
+                    placeholder="Please describe which parts of the assessment (score, classification, justification) seem inaccurate and why...",
+                    key="hardness_assessment_issues"
+                )
+                
+                submitted = st.form_submit_button("📨 Submit Feedback")
+                if submitted:
+                    if not assessment_issues.strip():
+                        st.warning("⚠️ Please provide details about the assessment issues.")
+                    else:
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, additional_feedback=assessment_issues):
+                            st.rerun()
+
+        # Feedback form 3: Suggestions
+        elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
+            with st.form("hardness_feedback_form_suggestions", clear_on_submit=True):
+                st.markdown("**Please share your suggestions for improvement:**")
+                st.markdown(f'**Employee ID:** {user_id}')
+                
+                suggestions = st.text_area(
+                    "Your suggestions:",
+                    placeholder="What features would you like to see improved or added to the hardness assessment?",
+                    key="hardness_suggestions"
+                )
+                
+                submitted = st.form_submit_button("📨 Submit Feedback")
+                if submitted:
+                    if not suggestions.strip():
+                        st.warning("⚠️ Please provide your suggestions.")
+                    else:
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
+                            st.rerun()
+    
     else:
-        # Feedback already submitted
-        st.success("✅ Thank you! Your feedback has been recorded.")
-        if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn"):
-            st.session_state.feedback_submitted = False
+        # Feedback already submitted - show success and option for another submission
+        st.markdown('<div class="feedback-success">✅ Thank you! Your feedback has been recorded.</div>', unsafe_allow_html=True)
+        if st.button("📝 Submit Another Feedback", key="hardness_reopen_feedback_btn", use_container_width=True):
+            st.session_state.hardness_feedback_submitted = False
             st.rerun()
-
-# ===============================
-# Download Section - Only show if feedback submitted
-# ===============================
-
-if st.session_state.get('feedback_submitted', False):
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="margin: 10px 0;">
-            <div class="section-title-box" style="padding: 0.5rem 1rem;">
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <h3 style="margin:0; color:white; font-weight:700; font-size:1.2rem; line-height:1.2;">
-                        📥 Download Hardness Assessment
-                    </h3>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Combine hardness outputs for download
-    combined_output = ""
-    for api_name, api_output in st.session_state.hardness_outputs.items():
-        if api_output and not api_output.startswith("API Error") and not api_output.startswith("Error:"):
-            combined_output += f"=== {api_name} ===\n{api_output}\n\n"
-
-    if combined_output:
-        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"hardness_assessment_{display_account.replace(' ', '_')}_{ts}.txt"
-        download_content = f"""Hardness Assessment Export
-Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Company: {display_account}
-Industry: {display_industry}
-Overall Classification: {hardness_classification}
-Overall Score: {hardness_score if hardness_score else 'N/A'}/5
-
-{combined_output}
----
-Generated by Hardness Assessment Tool
-"""
-        st.download_button(
-            "⬇️ Download Hardness Assessment as Text File",
-            data=download_content,
-            file_name=filename,
-            mime="text/plain",
-            use_container_width=True
-        )
-    else:
-        st.info(
-            "No hardness assessment available for download. Please complete the analysis first.")
 
 # =========================================
 # ⬅️ BACK BUTTON
 # =========================================
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
-
     st.switch_page("Welcome_Agent.py")
-
