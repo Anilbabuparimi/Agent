@@ -31,20 +31,14 @@ if 'vocab_output' not in st.session_state:
     st.session_state.vocab_output = ""
 if 'show_vocabulary' not in st.session_state:
     st.session_state.show_vocabulary = False
-if 'feedback_submitted' not in st.session_state:
-    st.session_state.feedback_submitted = False
+if 'vocab_feedback_submitted' not in st.session_state:  # CHANGED: Agent-specific
+    st.session_state.vocab_feedback_submitted = False
 if 'feedback_option' not in st.session_state:
     st.session_state.feedback_option = None
 if 'analysis_complete' not in st.session_state:
     st.session_state.analysis_complete = False
 if 'validation_attempted' not in st.session_state:
     st.session_state.validation_attempted = False
-
-# --- Render Header ---
-render_header(  # CALL IT HERE INSTEAD
-    agent_name="Vocabulary Agent",
-    agent_subtitle="Reviewing the business problem statement."
-)
 
 # --- Check for Admin Mode ---
 # Check if admin panel should be shown via query params
@@ -60,8 +54,18 @@ except:
 # If admin mode detected or session state shows admin, render admin section
 if admin_toggled or st.session_state.get('current_page', '') == 'admin':
     st.session_state.current_page = 'admin'
+    render_header(  # CHANGED: Admin-specific header
+        agent_name="Admin Panel",
+        agent_subtitle=""
+    )
     render_admin_panel()
     st.stop()  # Stop rendering the rest of the page
+
+# --- Render Header for Vocabulary Agent ---
+render_header(  # CALL IT HERE INSTEAD
+    agent_name="Vocabulary Agent",
+    agent_subtitle="Reviewing the business problem statement."
+)
 
 # ===============================
 # API Configuration
@@ -355,7 +359,8 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
                 [st.session_state.feedback_data, new_entry], ignore_index=True)
             st.info("📝 Feedback saved to session (cloud mode)")
 
-        st.session_state.feedback_submitted = True
+        # CHANGED: Set agent-specific feedback state
+        st.session_state.vocab_feedback_submitted = True
         return True
     except Exception as e:
         st.error(f"Error saving feedback: {str(e)}")
@@ -364,7 +369,7 @@ def submit_feedback(feedback_type, name="", email="", off_definitions="", sugges
 def reset_app_state():
     """Completely reset session state to initial values"""
     # Clear vocabulary-related state
-    keys_to_clear = ['vocab_output', 'show_vocabulary', 'feedback_submitted',
+    keys_to_clear = ['vocab_output', 'show_vocabulary', 'vocab_feedback_submitted',  # CHANGED
                      'feedback_option', 'analysis_complete', 'validation_attempted']
     for key in keys_to_clear:
         if key in st.session_state:
@@ -693,8 +698,8 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
             additional_feedback=additional_feedback
         )
 
-    # Show feedback section if not submitted
-    if not st.session_state.get('feedback_submitted', False):
+    # Show feedback section if not submitted - USING AGENT-SPECIFIC STATE
+    if not st.session_state.get('vocab_feedback_submitted', False):  # CHANGED
         fb_choice = st.radio(
             "Select your feedback type:",
             options=[
@@ -703,7 +708,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                 "The widget seems interesting, but I have some suggestions on the features.",
             ],
             index=None,
-            key="feedback_radio",
+            key="vocab_feedback_radio",  # CHANGED: Agent-specific key
         )
 
         if fb_choice:
@@ -711,7 +716,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
 
         # Feedback form 1: Positive feedback
         if fb_choice == "I have read it, found it useful, thanks.":
-            with st.form("feedback_form_positive", clear_on_submit=True):
+            with st.form("vocab_feedback_form_positive", clear_on_submit=True):  # CHANGED: Agent-specific key
                 st.info("Thank you for your positive feedback!")
                 # Simple Employee ID display - NO BOX
                 st.markdown(f'**Employee ID:** {user_id}')
@@ -719,12 +724,11 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                 if submitted:
                     # FIXED: Use the wrapper function
                     if submit_feedback_wrapper(fb_choice, user_id=user_id):
-                        st.session_state.feedback_submitted = True
                         st.rerun()
 
         # Feedback form 2: Definitions off - COMPACT VERSION
         elif fb_choice == "I have read it, found some definitions to be off.":
-            with st.form("feedback_form_defs", clear_on_submit=True):
+            with st.form("vocab_feedback_form_defs", clear_on_submit=True):  # CHANGED: Agent-specific key
                 st.markdown("**Please select which sections and terms have definitions that seem off:**")
                 
                 # Simple Employee ID display - NO BOX
@@ -784,7 +788,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                         selected_items = st.multiselect(
                             f"Select terms in {display_section_name}:",
                             options=items,
-                            key=f"multiselect_{section_name}",
+                            key=f"vocab_multiselect_{section_name}",  # CHANGED: Agent-specific key
                             help=f"Select terms with definition issues",
                             label_visibility="collapsed"  # Hides the label to save space
                         )
@@ -799,7 +803,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                 additional_feedback = st.text_input(
                     "Additional comments (optional):",
                     placeholder="Brief description of the issues...",
-                    key="definitions_additional"
+                    key="vocab_definitions_additional"  # CHANGED: Agent-specific key
                 )
 
                 submitted = st.form_submit_button("📨 Submit Feedback")
@@ -822,12 +826,11 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                             off_definitions=off_defs_text, 
                             additional_feedback=additional_feedback
                         ):
-                            st.session_state.feedback_submitted = True
                             st.rerun()
 
         # Feedback form 3: Suggestions - SINGLE LINE VERSION
         elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
-            with st.form("feedback_form_suggestions", clear_on_submit=True):
+            with st.form("vocab_feedback_form_suggestions", clear_on_submit=True):  # CHANGED: Agent-specific key
                 st.markdown("**Please share your suggestions for improvement:**")
                 
                 # Simple Employee ID display - NO BOX
@@ -837,7 +840,7 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                 suggestions = st.text_input(
                     "Your suggestions:",
                     placeholder="What features would you like to see improved or added?",
-                    key="suggestions_input"
+                    key="vocab_suggestions_input"  # CHANGED: Agent-specific key
                 )
                 
                 submitted = st.form_submit_button("📨 Submit Feedback")
@@ -847,20 +850,14 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
                     else:
                         # Use the wrapper function
                         if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
-                            st.session_state.feedback_submitted = True
                             st.rerun()
     
     else:
         # Feedback already submitted - show success and option for another submission
         st.markdown('<div class="feedback-success">✅ Thank you! Your feedback has been recorded.</div>', unsafe_allow_html=True)
-        if st.button("📝 Submit Another Feedback", key="reopen_feedback_btn", use_container_width=True):
-            st.session_state.feedback_submitted = False
+        if st.button("📝 Submit Another Feedback", key="vocab_reopen_feedback_btn", use_container_width=True):  # CHANGED: Agent-specific key
+            st.session_state.vocab_feedback_submitted = False  # CHANGED
             st.rerun()
-
-# If vocabulary not extracted yet, show message
-#elif not st.session_state.get("show_vocabulary"):
-    #st.markdown("---")
-    #st.info("👆 Please extract vocabulary first using the button above to access the feedback section.")
 
 # Enhanced CSS for proper dark mode dropdown visibility
 st.markdown("""
@@ -1008,10 +1005,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 # ===============================
-# Download Section - Only show if feedback submitted
+# Download Section - Only show if feedback submitted FOR THIS AGENT
 # ===============================
 
-if st.session_state.get('feedback_submitted', False):
+if st.session_state.get('vocab_feedback_submitted', False):  # CHANGED
     st.markdown("---")
     st.markdown(
         """
@@ -1058,11 +1055,3 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
-
-
-
-
-
-
-
-
