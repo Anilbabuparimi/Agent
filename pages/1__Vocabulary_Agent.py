@@ -598,324 +598,376 @@ if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_outpu
         unsafe_allow_html=True
     )
 # ===============================
-# User Feedback Section
+# User Feedback Section - ONLY SHOW AFTER VOCABULARY EXTRACTION
 # ===============================
 
-st.markdown("---")
-st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
-            unsafe_allow_html=True)
-st.markdown(
-    "Please share your thoughts or suggestions after reviewing the vocabulary results.")
+# Only show feedback section if vocabulary has been extracted
+if st.session_state.get("show_vocabulary") and st.session_state.get("vocab_output"):
+    st.markdown("---")
+    st.markdown('<div class="section-title-box" style="text-align:center;"><h3>💬 User Feedback</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown(
+        "Please share your thoughts or suggestions after reviewing the vocabulary results.")
 
-# IMPROVED section parsing function - FIXED TO DETECT ALL SECTIONS
-def parse_vocabulary_sections(vocab_text):
-    sections = {}
-    current_section = None
-    
-    if not vocab_text:
+    # IMPROVED section parsing function - FIXED TO DETECT ALL SECTIONS
+    def parse_vocabulary_sections(vocab_text):
+        sections = {}
+        current_section = None
+        
+        if not vocab_text:
+            return sections
+        
+        lines = vocab_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Detect section headers (Section X: Title) - IMPROVED REGEX
+            section_match = re.match(r'^Section\s+(\d+):\s*(.+?)(?=\n|$)', line, re.IGNORECASE)
+            if section_match:
+                # Save previous section
+                if current_section:
+                    sections[current_section] = sections.get(current_section, [])
+                
+                # Start new section
+                section_num = section_match.group(1)
+                section_title = section_match.group(2).strip()
+                current_section = f"Section {section_num}: {section_title}"
+                sections[current_section] = []
+                continue
+            
+            # Detect numbered items within sections (1. Term: Definition) - IMPROVED REGEX
+            if current_section and line:
+                # More flexible pattern to catch different formats
+                item_match = re.match(r'^(\d+)\.\s+(.+?)(?::\s*.+)?$', line)
+                if item_match:
+                    item_term = item_match.group(2).strip()
+                    # Clean up the term - remove any trailing colons or extra spaces
+                    item_term = re.sub(r':\s*$', '', item_term)
+                    sections[current_section].append(item_term)
+        
+        # Don't forget to add the last section
+        if current_section:
+            sections[current_section] = sections.get(current_section, [])
+        
         return sections
-    
-    lines = vocab_text.split('\n')
-    
-    for line in lines:
-        line = line.strip()
+
+    # Get vocabulary text from session state
+    vocab_text = st.session_state.get("vocab_output", "")
+    sections_data = parse_vocabulary_sections(vocab_text)
+
+    # FIXED: Get employee ID from login page
+    def get_user_id():
+        if 'employee_id' in st.session_state and st.session_state.employee_id:
+            return st.session_state.employee_id
         
-        # Detect section headers (Section X: Title) - IMPROVED REGEX
-        section_match = re.match(r'^Section\s+(\d+):\s*(.+?)(?=\n|$)', line, re.IGNORECASE)
-        if section_match:
-            # Save previous section
-            if current_section:
-                sections[current_section] = sections.get(current_section, [])
-            
-            # Start new section
-            section_num = section_match.group(1)
-            section_title = section_match.group(2).strip()
-            current_section = f"Section {section_num}: {section_title}"
-            sections[current_section] = []
-            continue
+        possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
+        for key in possible_keys:
+            if key in st.session_state and st.session_state[key]:
+                return st.session_state[key]
         
-        # Detect numbered items within sections (1. Term: Definition) - IMPROVED REGEX
-        if current_section and line:
-            # More flexible pattern to catch different formats
-            item_match = re.match(r'^(\d+)\.\s+(.+?)(?::\s*.+)?$', line)
-            if item_match:
-                item_term = item_match.group(2).strip()
-                # Clean up the term - remove any trailing colons or extra spaces
-                item_term = re.sub(r':\s*$', '', item_term)
-                sections[current_section].append(item_term)
-    
-    # Don't forget to add the last section
-    if current_section:
-        sections[current_section] = sections.get(current_section, [])
-    
-    return sections
+        try:
+            shared_data = get_shared_data()
+            if shared_data and 'user_id' in shared_data:
+                return shared_data['user_id']
+            if shared_data and 'employee_id' in shared_data:
+                return shared_data['employee_id']
+        except:
+            pass
+        
+        return 'Not Available'
 
-# Get vocabulary text from session state
-vocab_text = st.session_state.get("vocab_output", "")
-sections_data = parse_vocabulary_sections(vocab_text)
+    # Get the actual user ID
+    user_id = get_user_id()
 
-# FIXED: Get employee ID from login page
-def get_user_id():
-    if 'employee_id' in st.session_state and st.session_state.employee_id:
-        return st.session_state.employee_id
-    
-    possible_keys = ['user_id', 'userID', 'user', 'username', 'email', 'employee_id', 'employeeID']
-    for key in possible_keys:
-        if key in st.session_state and st.session_state[key]:
-            return st.session_state[key]
-    
-    try:
-        shared_data = get_shared_data()
-        if shared_data and 'user_id' in shared_data:
-            return shared_data['user_id']
-        if shared_data and 'employee_id' in shared_data:
-            return shared_data['employee_id']
-    except:
-        pass
-    
-    return 'Not Available'
+    # FIXED SUBMIT FEEDBACK FUNCTION CALL
+    def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
+        """Wrapper for submit_feedback to handle the parameter mismatch"""
+        # Call the original submit_feedback function with correct parameters
+        return submit_feedback(
+            feedback_type=feedback_type,
+            name=user_id,  # Map user_id to name parameter
+            email="",  # Empty email since we're using user_id
+            off_definitions=off_definitions,
+            suggestions=suggestions,
+            additional_feedback=additional_feedback
+        )
 
-# Get the actual user ID
-user_id = get_user_id()
+    # Show feedback section if not submitted
+    if not st.session_state.get('feedback_submitted', False):
+        fb_choice = st.radio(
+            "Select your feedback type:",
+            options=[
+                "I have read it, found it useful, thanks.",
+                "I have read it, found some definitions to be off.",
+                "The widget seems interesting, but I have some suggestions on the features.",
+            ],
+            index=None,
+            key="feedback_radio",
+        )
 
-# FIXED SUBMIT FEEDBACK FUNCTION CALL
-def submit_feedback_wrapper(feedback_type, user_id="", off_definitions="", suggestions="", additional_feedback=""):
-    """Wrapper for submit_feedback to handle the parameter mismatch"""
-    # Call the original submit_feedback function with correct parameters
-    return submit_feedback(
-        feedback_type=feedback_type,
-        name=user_id,  # Map user_id to name parameter
-        email="",  # Empty email since we're using user_id
-        off_definitions=off_definitions,
-        suggestions=suggestions,
-        additional_feedback=additional_feedback
-    )
+        if fb_choice:
+            st.session_state.feedback_option = fb_choice
 
-# Show feedback section if not submitted
-if not st.session_state.get('feedback_submitted', False):
-    fb_choice = st.radio(
-        "Select your feedback type:",
-        options=[
-            "I have read it, found it useful, thanks.",
-            "I have read it, found some definitions to be off.",
-            "The widget seems interesting, but I have some suggestions on the features.",
-        ],
-        index=None,
-        key="feedback_radio",
-    )
-
-    if fb_choice:
-        st.session_state.feedback_option = fb_choice
-
-    # Feedback form 1: Positive feedback
-    if fb_choice == "I have read it, found it useful, thanks.":
-        with st.form("feedback_form_positive", clear_on_submit=True):
-            st.info("Thank you for your positive feedback!")
-            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_display")
-            submitted = st.form_submit_button("📨 Submit Positive Feedback")
-            if submitted:
-                # FIXED: Use the wrapper function
-                if submit_feedback_wrapper(fb_choice, user_id=user_id):
-                    st.success("✅ Thank you! Your positive feedback has been recorded.")
-
-    # Feedback form 2: Definitions off - FIXED DYNAMIC DROPDOWNS
-    elif fb_choice == "I have read it, found some definitions to be off.":
-        with st.form("feedback_form_defs", clear_on_submit=True):
-            st.markdown("**Please select which sections and terms have definitions that seem off:**")
-            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_defs")
-
-            selected_issues = {}
-            
-            # Define the expected sections in order
-            expected_sections = [
-                "Section 1: Extract and Define Business Vocabulary Terms",
-                "Section 2: Identify KPIs and Metrics", 
-                "Section 3: Identify Relevant Business Processes",
-                "Section 4: Present a Cohesive Narrative"
-            ]
-            
-            # Create dropdowns for ALL expected sections with DYNAMIC content
-            for section_name in expected_sections:
-                # Get the display name without "Section X: "
-                display_section_name = section_name.replace('Section 1: ', '')\
-                                                  .replace('Section 2: ', '')\
-                                                  .replace('Section 3: ', '')\
-                                                  .replace('Section 4: ', '')
-                
-                st.markdown(f"**{display_section_name}**")
-                
-                # Get items for this section - PRIORITIZE PARSED DATA
-                items = []
-                
-                # First try to get dynamically parsed items
-                if section_name in sections_data and sections_data[section_name]:
-                    items = sections_data[section_name]
-                else:
-                    # Fallback to predefined items only if no dynamic data
-                    fallback_items = {
-                        "Section 1: Extract and Define Business Vocabulary Terms": [
-                            "Managed Pros", "Account Support", "Growth Strategies", 
-                            "Tailored Strategies", "Upselling", "Revenue Growth",
-                            "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
-                        ],
-                        "Section 2: Identify KPIs and Metrics": [
-                            "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
-                            "Upsell Rate", "Customer Satisfaction Score (CSAT)"
-                        ],
-                        "Section 3: Identify Relevant Business Processes": [
-                            "Account Management Process", "Sales Strategy Development", 
-                            "Customer Feedback Loop"
-                        ],
-                        "Section 4: Present a Cohesive Narrative": [
-                            "Business Problem Context", "Performance Indicators",
-                            "Upstream Processes", "Interconnectedness Analysis"
-                        ]
-                    }
-                    items = fallback_items.get(section_name, [])
-                
-                # Show dropdown for ALL sections
-                if items:
-                    selected_items = st.multiselect(
-                        f"Select problematic terms in {display_section_name}:",
-                        options=items,
-                        key=f"multiselect_{section_name}",
-                        help=f"Select terms from {display_section_name} that have definition issues"
-                    )
-                else:
-                    st.info("No terms available for this section.")
-                    selected_items = []
-                
-                if selected_items:
-                    selected_issues[section_name] = selected_items
-
-            additional_feedback = st.text_area(
-                "Additional comments:",
-                placeholder="Please provide more details about the definition issues you found..."
-            )
-
-            submitted = st.form_submit_button("📨 Submit Feedback")
-            if submitted:
-                if not selected_issues and not additional_feedback.strip():
-                    st.warning("⚠️ Please select at least one term that has definition issues or provide comments.")
-                else:
-                    # Format issues for submission
-                    issues_list = []
-                    for section, items in selected_issues.items():
-                        for item in items:
-                            issues_list.append(f"{section} - {item}")
-                    
-                    off_defs_text = " | ".join(issues_list) if issues_list else "No specific terms selected"
-                    
-                    # FIXED: Use the wrapper function with correct parameters
-                    if submit_feedback_wrapper(
-                        feedback_type=fb_choice, 
-                        user_id=user_id, 
-                        off_definitions=off_defs_text, 
-                        additional_feedback=additional_feedback
-                    ):
-                        st.success("✅ Thank you! Your feedback has been submitted.")
-
-    # Feedback form 3: Suggestions
-    elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
-        with st.form("feedback_form_suggestions", clear_on_submit=True):
-            st.markdown("**Please share your suggestions for improvement:**")
-            st.text_input("Employee ID", value=user_id, disabled=True, key="user_id_suggestions")
-            suggestions = st.text_area(
-                "Your suggestions:",
-                placeholder="What features would you like to see improved or added?"
-            )
-            submitted = st.form_submit_button("📨 Submit Feedback")
-            if submitted:
-                if not suggestions.strip():
-                    st.warning("⚠️ Please provide your suggestions.")
-                else:
+        # Feedback form 1: Positive feedback
+        if fb_choice == "I have read it, found it useful, thanks.":
+            with st.form("feedback_form_positive", clear_on_submit=True):
+                st.info("Thank you for your positive feedback!")
+                # FIXED: Employee ID with proper dark mode styling
+                st.markdown(f'<div class="employee-id-display">Employee ID: {user_id}</div>', unsafe_allow_html=True)
+                submitted = st.form_submit_button("📨 Submit Positive Feedback")
+                if submitted:
                     # FIXED: Use the wrapper function
-                    if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
-                        st.success("✅ Thank you! Your feedback has been submitted.")
-else:
-    # Feedback already submitted
-    st.success("✅ Thank you! Your feedback has been recorded.")
-    if st.button("📝 Submit Additional Feedback", key="reopen_feedback_btn"):
-        st.session_state.feedback_submitted = False
-        st.rerun()
+                    if submit_feedback_wrapper(fb_choice, user_id=user_id):
+                        st.session_state.feedback_submitted = True
+                        st.rerun()
+
+        # Feedback form 2: Definitions off - FIXED DYNAMIC DROPDOWNS
+        elif fb_choice == "I have read it, found some definitions to be off.":
+            with st.form("feedback_form_defs", clear_on_submit=True):
+                st.markdown("**Please select which sections and terms have definitions that seem off:**")
+                # FIXED: Employee ID with proper dark mode styling
+                st.markdown(f'<div class="employee-id-display">Employee ID: {user_id}</div>', unsafe_allow_html=True)
+
+                selected_issues = {}
+                
+                # Define the expected sections in order
+                expected_sections = [
+                    "Section 1: Extract and Define Business Vocabulary Terms",
+                    "Section 2: Identify KPIs and Metrics", 
+                    "Section 3: Identify Relevant Business Processes",
+                    "Section 4: Present a Cohesive Narrative"
+                ]
+                
+                # Create dropdowns for ALL expected sections with DYNAMIC content
+                for section_name in expected_sections:
+                    # Get the display name without "Section X: "
+                    display_section_name = section_name.replace('Section 1: ', '')\
+                                                      .replace('Section 2: ', '')\
+                                                      .replace('Section 3: ', '')\
+                                                      .replace('Section 4: ', '')
+                    
+                    st.markdown(f"**{display_section_name}**")
+                    
+                    # Get items for this section - PRIORITIZE PARSED DATA
+                    items = []
+                    
+                    # First try to get dynamically parsed items
+                    if section_name in sections_data and sections_data[section_name]:
+                        items = sections_data[section_name]
+                    else:
+                        # Fallback to predefined items only if no dynamic data
+                        fallback_items = {
+                            "Section 1: Extract and Define Business Vocabulary Terms": [
+                                "Managed Pros", "Account Support", "Growth Strategies", 
+                                "Tailored Strategies", "Upselling", "Revenue Growth",
+                                "Lifetime Value (LTV)", "Missed Opportunities", "Suboptimal"
+                            ],
+                            "Section 2: Identify KPIs and Metrics": [
+                                "Customer Lifetime Value (LTV)", "Revenue Growth Rate", 
+                                "Upsell Rate", "Customer Satisfaction Score (CSAT)"
+                            ],
+                            "Section 3: Identify Relevant Business Processes": [
+                                "Account Management Process", "Sales Strategy Development", 
+                                "Customer Feedback Loop"
+                            ],
+                            "Section 4: Present a Cohesive Narrative": [
+                                "Business Problem Context", "Performance Indicators",
+                                "Upstream Processes", "Interconnectedness Analysis"
+                            ]
+                        }
+                        items = fallback_items.get(section_name, [])
+                    
+                    # Show dropdown for ALL sections
+                    if items:
+                        selected_items = st.multiselect(
+                            f"Select problematic terms in {display_section_name}:",
+                            options=items,
+                            key=f"multiselect_{section_name}",
+                            help=f"Select terms from {display_section_name} that have definition issues"
+                        )
+                    else:
+                        st.info("No terms available for this section.")
+                        selected_items = []
+                    
+                    if selected_items:
+                        selected_issues[section_name] = selected_items
+
+                additional_feedback = st.text_area(
+                    "Additional comments:",
+                    placeholder="Please provide more details about the definition issues you found..."
+                )
+
+                submitted = st.form_submit_button("📨 Submit Feedback")
+                if submitted:
+                    if not selected_issues and not additional_feedback.strip():
+                        st.warning("⚠️ Please select at least one term that has definition issues or provide comments.")
+                    else:
+                        # Format issues for submission
+                        issues_list = []
+                        for section, items in selected_issues.items():
+                            for item in items:
+                                issues_list.append(f"{section} - {item}")
+                        
+                        off_defs_text = " | ".join(issues_list) if issues_list else "No specific terms selected"
+                        
+                        # FIXED: Use the wrapper function with correct parameters
+                        if submit_feedback_wrapper(
+                            feedback_type=fb_choice, 
+                            user_id=user_id, 
+                            off_definitions=off_defs_text, 
+                            additional_feedback=additional_feedback
+                        ):
+                            st.session_state.feedback_submitted = True
+                            st.rerun()
+
+        # Feedback form 3: Suggestions
+        elif fb_choice == "The widget seems interesting, but I have some suggestions on the features.":
+            with st.form("feedback_form_suggestions", clear_on_submit=True):
+                st.markdown("**Please share your suggestions for improvement:**")
+                # FIXED: Employee ID with proper dark mode styling
+                st.markdown(f'<div class="employee-id-display">Employee ID: {user_id}</div>', unsafe_allow_html=True)
+                suggestions = st.text_area(
+                    "Your suggestions:",
+                    placeholder="What features would you like to see improved or added?"
+                )
+                submitted = st.form_submit_button("📨 Submit Feedback")
+                if submitted:
+                    if not suggestions.strip():
+                        st.warning("⚠️ Please provide your suggestions.")
+                    else:
+                        # FIXED: Use the wrapper function
+                        if submit_feedback_wrapper(fb_choice, user_id=user_id, suggestions=suggestions):
+                            st.session_state.feedback_submitted = True
+                            st.rerun()
+    else:
+        # Feedback already submitted - show success and option for another submission
+        st.markdown('<div class="feedback-success">✅ Thank you! Your feedback has been recorded.</div>', unsafe_allow_html=True)
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if st.button("📝 Submit Another Feedback", key="reopen_feedback_btn", use_container_width=True):
+                st.session_state.feedback_submitted = False
+                st.rerun()
+        with col2:
+            st.info("Click the button above if you want to submit additional feedback.")
+
+# If vocabulary not extracted yet, show message
+elif not st.session_state.get("show_vocabulary"):
+    st.markdown("---")
+    st.info("👆 Please extract vocabulary first using the button above to access the feedback section.")
 
 # Enhanced CSS for proper dark mode dropdown visibility
 st.markdown("""
 <style>
+    .employee-id-display {{
+        color: #ff6b6b !important;
+        background-color: rgba(255, 107, 107, 0.1) !important;
+        padding: 8px 12px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 107, 107, 0.3) !important;
+        font-weight: 500 !important;
+        margin: 8px 0 !important;
+    }}
     /* Dark mode styling for disabled inputs */
-    .stTextInput [data-baseweb="input"]:disabled {
+    .stTextInput [data-baseweb="input"]:disabled {{
         background-color: #1e1e1e !important;
         color: #ffffff !important;
         border-color: #444444 !important;
         opacity: 0.8;
-    }
+    }}
     
-    /* MULTISELECT DROPDOWN FIXES - MAKE THEM VISIBLE */
-    .stMultiSelect [data-baseweb="select"] {
-        background-color: #0e1117 !important;
-        border: 1px solid #555555 !important;
+    /* MULTISELECT DROPDOWN FIXES - COMPREHENSIVE FIX */
+    .stMultiSelect [data-baseweb="select"] > div {{
+        background-color: #1f2937 !important;
         color: white !important;
-    }
+        border: 2px solid rgba(255,255,255,0.3) !important;
+    }}
     
-    /* Dropdown text color */
-    .stMultiSelect [data-baseweb="select"] div {
-        color: white !important;
-    }
-    
-    /* Dropdown placeholder */
-    .stMultiSelect [data-baseweb="select"] input::placeholder {
-        color: #cccccc !important;
-    }
-    
-    /* Dropdown hover state */
-    .stMultiSelect [data-baseweb="select"]:hover {
-        border-color: #8b1e1e !important;
-    }
-    
-    /* Dropdown focus state */
-    .stMultiSelect [data-baseweb="select"]:focus-within {
-        border-color: #8b1e1e !important;
-        box-shadow: 0 0 0 2px rgba(139, 30, 30, 0.2) !important;
-    }
-    
-    /* Dropdown popover/menu */
-    [data-baseweb="popover"] {
-        background-color: #1e1e1e !important;
-        border: 1px solid #555555 !important;
-    }
-    
-    /* Dropdown options list */
-    [role="listbox"] {
-        background-color: #1e1e1e !important;
-        color: white !important;
-    }
-    
-    /* Individual dropdown options */
-    [role="option"] {
-        background-color: #1e1e1e !important;
-        color: white !important;
-        padding: 8px 12px;
-    }
-    
-    /* Hovered dropdown option */
-    [role="option"]:hover {
-        background-color: #8b1e1e !important;
-        color: white !important;
-    }
-    
-    /* Selected dropdown option */
-    [aria-selected="true"] {
-        background-color: #8b1e1e !important;
-        color: white !important;
-    }
+    .stMultiSelect [data-baseweb="select"] > div:hover {{
+        background-color: #374151 !important;
+        border-color: rgba(255,255,255,0.5) !important;
+    }}
     
     /* Selected tags in multiselect */
-    .stMultiSelect [data-baseweb="tag"] {
+    .stMultiSelect [data-baseweb="tag"] {{
         background-color: #8b1e1e !important;
         color: white !important;
         border-radius: 12px !important;
         font-weight: 500;
-    }
+    }}
+    
+    /* Dropdown popover/menu */
+    [data-baseweb="popover"] {{
+        background-color: #1f2937 !important;
+        border: 2px solid rgba(255,255,255,0.3) !important;
+    }}
+    
+    /* Dropdown options list */
+    [role="listbox"] {{
+        background-color: #1f2937 !important;
+        color: white !important;
+    }}
+    
+    /* Individual dropdown options */
+    [role="option"] {{
+        background-color: #1f2937 !important;
+        color: white !important;
+        padding: 8px 12px;
+    }}
+    
+    /* Hovered dropdown option */
+    [role="option"]:hover {{
+        background-color: #374151 !important;
+        color: white !important;
+    }}
+    
+    /* Selected dropdown option */
+    [aria-selected="true"] {{
+        background-color: #8b1e1e !important;
+        color: white !important;
+    }}
+    
+    /* Make selected option text visible in dropdown */
+    .stSelectbox [data-baseweb="select"] span,
+    .stMultiSelect [data-baseweb="select"] span {{
+        color: white !important;
+    }}
+    
+    /* Employee ID styling for dark mode */
+    .empty-id-text, .employee-id-display {{
+        color: #ff6b6b !important;
+        background-color: rgba(255, 107, 107, 0.1) !important;
+        padding: 8px 12px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 107, 107, 0.3) !important;
+        font-weight: 500 !important;
+        margin: 8px 0 !important;
+    }}
+    
+    /* Submit button styling to match other buttons */
+    .stButton button {{
+        background-color: #8b1e1e !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 4px !important;
+        font-weight: 600 !important;
+    }}
+    
+    .stButton button:hover {{
+        background-color: #a52a2a !important;
+        color: white !important;
+    }}
+    
+    /* Success message styling */
+    .feedback-success {{
+        background-color: rgba(34, 197, 94, 0.1) !important;
+        color: #22c55e !important;
+        padding: 12px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(34, 197, 94, 0.3) !important;
+        margin: 10px 0 !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 # ===============================
@@ -969,11 +1021,3 @@ Generated by Vocabulary Analysis Tool
 st.markdown("---")
 if st.button("⬅️ Back to Main Page", use_container_width=True):
     st.switch_page("Welcome_Agent.py")
-
-
-
-
-
-
-
-
